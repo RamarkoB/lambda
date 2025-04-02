@@ -1,0 +1,12 @@
+dist/
+
+deno.lock
+deno.lock.json
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+.DS_Store
+Thumbs.db

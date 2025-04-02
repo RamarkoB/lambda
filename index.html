@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100..900;1,100..900&display=swap"
+            rel="stylesheet"
+        />
+        <link href="styles.css" rel="stylesheet" />
+    </head>
+
+    <body>
+        <h2>Lamλda Calculus</h2>
+
+        <div id="main">
+            <div id="mainExpand">
+                <div>
+                    <input
+                        type="checkbox"
+                        id="resize-checkbox"
+                        style="display: none"
+                    />
+                    <label for="resize-checkbox" id="resize">Expand</label>
+                </div>
+                <svg id="lambdaSvg" viewBox="0 0 0 0"></svg>
+            </div>
+        </div>
+
+        <p id="lambdaTerm"></p>
+
+        <div id="toggle" class="buttonList">
+            <button id="showNames">Toggle Names</button>
+            <button id="toggleLabels">Toggle Labels</button>
+        </div>
+
+        <div id="menu" class="buttonList">
+            <button id="reset">
+                <svg
+                    width="40"
+                    height="31"
+                    viewBox="0 0 40 31"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M18.5 3L4 15.5L18.5 28"
+                        stroke="black"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                    />
+                    <path
+                        d="M37.5 3L23 15.5L37.5 28"
+                        stroke="black"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                    />
+                </svg>
+            </button>
+            <button id="back">
+                <svg
+                    width="21"
+                    height="31"
+                    viewBox="0 0 21 31"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M18.5 3L4 15.5L18.5 28"
+                        stroke="black"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                    />
+                </svg>
+            </button>
+            <p id="index"></p>
+            <button id="next">
+                <svg
+                    width="22"
+                    height="31"
+                    viewBox="0 0 22 31"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M3 3L17.5 15.5L3 28"
+                        stroke="black"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                    />
+                </svg>
+            </button>
+            <button id="totalReduce">
+                <svg
+                    width="41"
+                    height="31"
+                    viewBox="0 0 41 31"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M22 3L36.5 15.5L22 28"
+                        stroke="black"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                    />
+                    <path
+                        d="M3 3L17.5 15.5L3 28"
+                        stroke="black"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                    />
+                </svg>
+            </button>
+        </div>
+
+        <script src="main.js" defer></script>
+    </body>
+</html>
