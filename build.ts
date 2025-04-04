@@ -1,8 +1,7 @@
-// @ts-nocheck
 import * as esbuild from 'npm:esbuild';
 import { copyFile } from 'node:fs/promises';
 
-const result = await esbuild.build({
+await esbuild.build({
     entryPoints: ['src/main.ts'],
     outfile: './dist/main.js',
     bundle: true,

@@ -2,5 +2,13 @@
     "tasks": {
         "build": "deno run -A build.ts",
         "dev": "deno run -A --watch src/main.ts"
+    },
+    "fmt": {
+        "lineWidth": 120,
+        "indentWidth": 4,
+        "singleQuote": true
+    },
+    "compilerOptions": {
+        "lib": ["dom", "dom.iterable", "deno.window"]
     }
 }
