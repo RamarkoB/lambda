@@ -1,5 +1,4 @@
-import { Application, Term, TermType } from './types.ts';
-import { fmtTerm } from './utils.ts';
+import { Application, EncodedTerm, Term, TermType } from './types.ts';
 
 const HOR_GAP = 15;
 const VER_GAP = 10;
@@ -12,26 +11,26 @@ type Alignment = 'left' | 'middle' | 'right';
 type RenderConfig = { labels: boolean; showNames: boolean };
 const defaultConfig: RenderConfig = { labels: true, showNames: true };
 
-const renderHorLine = (type: TermType, name: string, x: number, y: number, x2 = x) => {
+const renderHorLine = (type: TermType, encoding: string, x: number, y: number, x2 = x) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', (x * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('y1', (y * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('x2', (x2 * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('y2', (y * VER_GAP + VER_OFFSET).toString());
-    line.setAttribute('class', `${type} hover line ${name}`);
+    line.setAttribute('class', `${type} hover line code-${encoding}`);
     line.setAttribute('data-layer', `${y}`);
     line.setAttribute('data-horizontalStart', `${x}`);
     line.setAttribute('data-horizontalEnd', `${x2}`);
     return line;
 };
 
-const renderVerLine = (type: TermType, name: string, x: number, y: number, y2: number) => {
+const renderVerLine = (type: TermType, encoding: string, x: number, y: number, y2: number) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', (x * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('y1', (y * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('x2', (x * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('y2', (y2 * VER_GAP + VER_OFFSET).toString());
-    line.setAttribute('class', `${type} hover line ${name}`);
+    line.setAttribute('class', `${type} hover line code-${encoding}`);
     line.setAttribute('data-horizontalOffset', `${x}`);
     line.setAttribute('data-topLayer', `${y2}`);
     line.setAttribute('data-bottomLayer', `${y}`);
@@ -39,11 +38,18 @@ const renderVerLine = (type: TermType, name: string, x: number, y: number, y2: n
     return line;
 };
 
-const renderText = (type: TermType | null, val: string, x: number, y: number, align: Alignment = 'middle') => {
+const renderLabel = (
+    type: TermType | null,
+    val: string,
+    encoding: string,
+    x: number,
+    y: number,
+    align: Alignment = 'middle'
+) => {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', (x * HOR_GAP + HOR_OFFSET).toString());
     text.setAttribute('y', (y * VER_GAP + VER_OFFSET).toString());
-    text.setAttribute('class', `${type ?? 'main'} text ${val}`);
+    text.setAttribute('class', `${type ?? 'main'} label code-${encoding} ${val}`);
     text.setAttribute('text-anchor', align);
     text.textContent = val;
     return text;
@@ -65,9 +71,9 @@ const renderAbstractionGap = (labels: boolean, horFuncLayer: number, term: Appli
     return [newTermStart, newGroupStart] as [number, number];
 };
 
-const renderTerm = (
+const renderTerm = <T extends Term>(
     group: Element,
-    term: Term,
+    term: EncodedTerm<T>,
     horLayers: number | [number, number],
     verTopLayer: number,
     verBottomLayer: number,
@@ -81,9 +87,9 @@ const renderTerm = (
         case TermType.Value: {
             const valueStop = values[term.val] ?? 1;
 
-            group.append(renderVerLine(term.type, term.val, termStart, verBottomLayer, valueStop));
+            group.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, valueStop));
             if (labels) {
-                group.append(renderText(term.type, term.val, termStart, 0));
+                group.append(renderLabel(term.type, term.val, term.encoding, termStart, 0));
             }
 
             return [termStart + 1, verTopLayer, verBottomLayer];
@@ -96,9 +102,9 @@ const renderTerm = (
             const newValues = { ...values, [name]: verLineLayer };
 
             if (showNames && term.name) {
-                group.append(renderVerLine(TermType.Value, term.name, termStart, verBottomLayer, 1));
+                group.append(renderVerLine(TermType.Value, term.encoding, termStart, verBottomLayer, 1));
                 if (labels) {
-                    group.append(renderText(TermType.Value, term.name, termStart, 0));
+                    group.append(renderLabel(TermType.Value, term.name, term.encoding, termStart, 0));
                 }
 
                 return [termStart + 1, verTopLayer, verBottomLayer];
@@ -115,9 +121,20 @@ const renderTerm = (
                 );
                 const [horBodyLayer, verTopBodyLayer, verBotBodyLayer] = newLayers;
 
-                group.append(renderHorLine(term.type, `λ${name}`, termStart - 0.5, verLineLayer, horBodyLayer - 0.5));
+                group.append(
+                    renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5)
+                );
                 if (labels) {
-                    group.append(renderText(term.type, `λ${name}`, groupStart - 1.5, verLineLayer + 0.25, 'right'));
+                    group.append(
+                        renderLabel(
+                            term.type,
+                            `λ${name}`,
+                            term.encoding,
+                            groupStart - 1.5,
+                            verLineLayer + 0.25,
+                            'right'
+                        )
+                    );
                 }
 
                 return [horBodyLayer, verTopBodyLayer + 1, verBotBodyLayer];
@@ -127,11 +144,9 @@ const renderTerm = (
         case TermType.Application: {
             const newVerBottomLayer = verBottomLayer - 1;
 
-            group.append(
-                renderVerLine(term.type, fmtTerm(term.func, showNames), termStart, verBottomLayer, newVerBottomLayer)
-            );
+            group.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, newVerBottomLayer));
 
-            const funcGroup = renderGroup(group, `group ${term.func.type}`);
+            const funcGroup = renderGroup(group, `group ${term.func.type} ${term.encoding}`);
             const funcLayers = renderTerm(
                 funcGroup,
                 term.func,
@@ -145,9 +160,7 @@ const renderTerm = (
 
             const newHorLayer = renderAbstractionGap(labels, horFuncLayer, term, termStart);
 
-            group.append(
-                renderHorLine(term.type, fmtTerm(term.arg, showNames), termStart, newVerBottomLayer, newHorLayer[0])
-            );
+            group.append(renderHorLine(term.type, term.encoding, termStart, newVerBottomLayer, newHorLayer[0]));
 
             const argGroup = renderGroup(group, `group ${term.arg.type}`);
             const horArgLayers = renderTerm(

@@ -1,7 +1,7 @@
-import betaReduce from './eval.ts';
+import reduceWithStrategy, { EvalStrategy } from './eval.ts';
 import { fmtTerm, numTermLayers } from './utils.ts';
 import renderTerm, { defaultConfig, HOR_GAP, HOR_OFFSET, renderGroup, VER_GAP, VER_OFFSET } from './render.ts';
-import type { Term } from './types.ts';
+import { encode, type Term } from './types.ts';
 import term from './terms.ts';
 
 // NAME FUNCTIONS
@@ -15,6 +15,7 @@ const createMain = (term: Term) => {
     const termElement = document.getElementById('lambdaTerm')!;
 
     let config = defaultConfig;
+    let evalStrategy = EvalStrategy.NormalOrder;
 
     const termHistory: Term[] = [term];
     let currTermIndex = 0;
@@ -31,7 +32,7 @@ const createMain = (term: Term) => {
         const group = renderGroup(svg, 'group');
         svg.appendChild(group);
 
-        const currTerm = termHistory[currTermIndex];
+        const currTerm = encode(termHistory[currTermIndex]);
         const termDepth = numTermLayers(currTerm) + ABSTRACT_SPACE;
 
         const [termEnd] = renderTerm(group, currTerm, 0, 0, termDepth, {}, config);
@@ -41,7 +42,29 @@ const createMain = (term: Term) => {
         );
 
         indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
-        termElement.innerText = fmtTerm(currTerm, config.showNames);
+        termElement.innerHTML = fmtTerm(currTerm, config.showNames);
+
+        // Add hover listeners to all relevant elements
+        document.querySelectorAll('.line, .textGroup, .label').forEach((element) => {
+            const className = element
+                .getAttribute('class')
+                ?.split(' ')
+                .find((cls) => cls.startsWith('code-'));
+
+            if (className) {
+                const linkedElements = document.querySelectorAll(`.${className}`);
+
+                element.addEventListener('mouseover', (e) => {
+                    e.stopPropagation();
+                    linkedElements.forEach((el) => el.classList.add('selected'));
+                });
+
+                element.addEventListener('mouseout', (e) => {
+                    e.stopPropagation();
+                    linkedElements.forEach((el) => el.classList.remove('selected'));
+                });
+            }
+        });
     };
 
     const reduce = () => {
@@ -49,12 +72,12 @@ const createMain = (term: Term) => {
 
         try {
             const currTerm = termHistory[currTermIndex];
-            const newTerm = betaReduce(currTerm);
+            const newTerm = reduceWithStrategy(currTerm, evalStrategy);
 
             if (currTerm === newTerm) {
                 isTermNormalized = true;
             } else {
-                termHistory.push(betaReduce(currTerm));
+                termHistory.push(reduceWithStrategy(currTerm, evalStrategy));
                 currTermIndex++;
             }
         } catch (_e) {
@@ -113,10 +136,13 @@ const createMain = (term: Term) => {
         render();
     };
 
-    const toggle = { toggleShowNames, toggleLabels };
+    const toggleEvalStrategy = (newEvalStrategy: EvalStrategy) => {
+        evalStrategy = newEvalStrategy;
+    };
 
     render();
 
+    const toggle = { toggleShowNames, toggleLabels, toggleEvalStrategy };
     return { reset, back, next, totalReduce, toggle };
 };
 
@@ -127,7 +153,7 @@ const addOnClick = (id: string, callback: () => void) => {
 };
 
 const { reset, back, next, totalReduce, toggle } = createMain(term);
-const { toggleShowNames, toggleLabels } = toggle;
+const { toggleShowNames, toggleLabels, toggleEvalStrategy } = toggle;
 
 addOnClick('reset', reset);
 addOnClick('back', back);
@@ -136,6 +162,11 @@ addOnClick('totalReduce', totalReduce);
 
 addOnClick('showNames', toggleShowNames);
 addOnClick('toggleLabels', toggleLabels);
+
+document.getElementById('evalStrategy')?.addEventListener('change', (e) => {
+    const value = e.currentTarget as HTMLSelectElement;
+    toggleEvalStrategy(value.value as EvalStrategy);
+});
 
 globalThis.addEventListener('keydown', (keyEvent) => {
     switch (keyEvent.key) {

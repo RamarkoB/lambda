@@ -1,5 +1,12 @@
 import { createValue, Term, TermType, Value } from './types.ts';
 
+export enum EvalStrategy {
+    NormalOrder = 'Normal Order',
+    ApplicativeOrder = 'Applicative Order',
+    CallByName = 'Call by Name',
+    CallByValue = 'Call by Value'
+}
+
 const getBoundVariables = (term: Term): Set<string> => {
     switch (term.type) {
         case TermType.Value:
@@ -38,7 +45,7 @@ const alphaConvert = (term: Term, oldName: string, newName: string): Term => {
             return {
                 type: TermType.Application,
                 func: alphaConvert(term.func, oldName, newName),
-                arg: alphaConvert(term.arg, oldName, newName),
+                arg: alphaConvert(term.arg, oldName, newName)
             };
     }
 };
@@ -66,11 +73,11 @@ const betaReduce = (term: Term): Term => {
                     return betaReduce(
                         needsAlpha
                             ? replace(
-                                alphaConvert(reducedFunc.body, reducedFunc.param.val, freshVar),
-                                createValue(freshVar),
-                                reducedArg,
-                            )
-                            : replace(reducedFunc.body, reducedFunc.param, reducedArg),
+                                  alphaConvert(reducedFunc.body, reducedFunc.param.val, freshVar),
+                                  createValue(freshVar),
+                                  reducedArg
+                              )
+                            : replace(reducedFunc.body, reducedFunc.param, reducedArg)
                     );
                 }
                 return term;
@@ -80,7 +87,7 @@ const betaReduce = (term: Term): Term => {
             return {
                 type: TermType.Application,
                 func: reducedFunc,
-                arg: reducedArg,
+                arg: reducedArg
             };
         }
     }
@@ -99,7 +106,7 @@ const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): 
                 return {
                     type: TermType.Abstraction,
                     param: createValue(freshVar),
-                    body: replace(alphaConvert(term.body, term.param.val, freshVar), oldVal, newVal),
+                    body: replace(alphaConvert(term.body, term.param.val, freshVar), oldVal, newVal)
                 };
             }
             return { ...term, body: replace(term.body, oldVal, newVal) };
@@ -108,24 +115,13 @@ const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): 
             return {
                 type: TermType.Application,
                 func: replace(term.func, oldVal, newVal),
-                arg: replace(term.arg, oldVal, newVal),
+                arg: replace(term.arg, oldVal, newVal)
             };
     }
 };
 
-// const isNormalForm = (term: Term): boolean => {
-//     switch (term.type) {
-//         case TermType.Value:
-//             return true;
-//         case TermType.Abstraction:
-//             return isNormalForm(term.body);
-//         case TermType.Application:
-//             return (
-//                 term.func.type !== TermType.Abstraction &&
-//                 isNormalForm(term.func) &&
-//                 isNormalForm(term.arg)
-//             );
-//     }
-// };
+const reduceWithStrategy = (term: Term, evalStrategy: EvalStrategy) => {
+    return betaReduce(term);
+};
 
-export default betaReduce;
+export default reduceWithStrategy;

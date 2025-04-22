@@ -1,23 +1,44 @@
-import betaReduce from './eval.ts';
-import { Term, TermType } from './types.ts';
+import { EncodedTerm, Term, TermType } from './types.ts';
+
+const txtWrapper = (text: string, type: TermType) => `<span class="text ${type}">${text}</span>`;
+
+// Punctuation constants
+const OPEN = txtWrapper('(', TermType.Application);
+const CLOSE = txtWrapper(')', TermType.Application);
 
 // LOG FUNCTIONS
-const fmtTerm = (term: Term, isShowNames: boolean): string => {
+const fmtTerm = <T extends Term>(term: EncodedTerm<T>, isShowNames: boolean): string => {
+    let formattedTerm;
+
     switch (term.type) {
         case TermType.Value:
-            return term.val;
-        case TermType.Abstraction:
-            return isShowNames && term.name ? term.name : `λ${term.param.val}.${fmtTerm(term.body, isShowNames)}`;
-        case TermType.Application:
-            return `(${fmtTerm(term.func, isShowNames)} ${fmtTerm(term.arg, isShowNames)})`;
+            formattedTerm = txtWrapper(term.val, TermType.Value);
+            break;
+
+        case TermType.Abstraction: {
+            const formattedVal = txtWrapper(`λ${term.param.val}.`, term.type);
+            const formattedBody = fmtTerm(term.body, isShowNames);
+            formattedTerm =
+                isShowNames && term.name ? txtWrapper(term.name, TermType.Value) : `${formattedVal}${formattedBody}`;
+            break;
+        }
+
+        case TermType.Application: {
+            const formattedFunc = fmtTerm(term.func, isShowNames);
+            const formattedArg = fmtTerm(term.arg, isShowNames);
+            formattedTerm = `${OPEN}${formattedFunc} ${formattedArg}${CLOSE}`;
+            break;
+        }
     }
+
+    return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
 };
 
 // CONSOLE EVALUATION FUNCTIONS
-const evaluate = (term: Term): Term[] => {
-    const next = betaReduce(term);
-    return next === term ? [term] : [term, ...evaluate(next)];
-};
+// const evaluate = (term: Term): Term[] => {
+//     const next = reduceWithStrategy(term, evalSt);
+//     return next === term ? [term] : [term, ...evaluate(next)];
+// };
 
 // const solveTerm = (term: Term, isShowNames: boolean = true) => {
 //     evaluate(term).forEach((val, i) => {
@@ -36,4 +57,4 @@ const numTermLayers = (term: Term): number => {
     }
 };
 
-export { evaluate, fmtTerm, numTermLayers };
+export { fmtTerm, numTermLayers };
