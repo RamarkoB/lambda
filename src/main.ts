@@ -1,5 +1,5 @@
 import reduceWithStrategy, { EvalStrategy } from './eval.ts';
-import { numTermLayers, rawfmtTerm } from './utils.ts';
+import { numTermLayers, fmtTerm } from './utils.ts';
 import renderTerm, { defaultConfig, HOR_GAP, HOR_OFFSET, renderGroup, VER_GAP, VER_OFFSET } from './render.ts';
 import { apply, encode, TermType, type Term } from './types.ts';
 import * as terms from './terms.ts';
@@ -16,6 +16,8 @@ const addHoverEffect = (element: Element) => {
 
     if (className) {
         const linkedElements = document.querySelectorAll(`#lambdaTerm .${className}, #lambdaSvg .${className}`);
+
+        console.log(linkedElements);
 
         element.addEventListener('mouseover', (e) => {
             e.stopPropagation();
@@ -63,7 +65,7 @@ const createMain = (term: Term) => {
         );
 
         indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
-        termElement.innerHTML = rawfmtTerm(currTerm);
+        termElement.innerHTML = fmtTerm(currTerm, config.showNames);
 
         // Add hover listeners to all relevant elements
         document.getElementById('lambdaSvg')?.querySelectorAll('.line, .label').forEach(addHoverEffect);
