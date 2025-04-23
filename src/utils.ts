@@ -34,6 +34,17 @@ const fmtTerm = <T extends Term>(term: EncodedTerm<T>, isShowNames: boolean): st
     return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
 };
 
+const rawfmtTerm = <T extends Term>(term: EncodedTerm<T>): string => {
+    switch (term.type) {
+        case TermType.Value:
+            return term.val;
+        case TermType.Abstraction:
+            return term.name ? term.name : `λ${term.param.val}.${rawfmtTerm(term.body)}`;
+        case TermType.Application:
+            return `(${rawfmtTerm(term.func)} ${rawfmtTerm(term.arg)})`;
+    }
+};
+
 // CONSOLE EVALUATION FUNCTIONS
 // const evaluate = (term: Term): Term[] => {
 //     const next = reduceWithStrategy(term, evalSt);
@@ -57,4 +68,4 @@ const numTermLayers = (term: Term): number => {
     }
 };
 
-export { fmtTerm, numTermLayers };
+export { rawfmtTerm, fmtTerm, numTermLayers };

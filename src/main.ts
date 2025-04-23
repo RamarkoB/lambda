@@ -1,12 +1,33 @@
 import reduceWithStrategy, { EvalStrategy } from './eval.ts';
-import { fmtTerm, numTermLayers } from './utils.ts';
+import { numTermLayers, rawfmtTerm } from './utils.ts';
 import renderTerm, { defaultConfig, HOR_GAP, HOR_OFFSET, renderGroup, VER_GAP, VER_OFFSET } from './render.ts';
-import { encode, type Term } from './types.ts';
-import term from './terms.ts';
+import { apply, encode, TermType, type Term } from './types.ts';
+import * as terms from './terms.ts';
 
 // NAME FUNCTIONS
 
 const ABSTRACT_SPACE = 2;
+
+const addHoverEffect = (element: Element) => {
+    const className = element
+        .getAttribute('class')
+        ?.split(' ')
+        .find((cls) => cls.startsWith('code-'));
+
+    if (className) {
+        const linkedElements = document.querySelectorAll(`#lambdaTerm .${className}, #lambdaSvg .${className}`);
+
+        element.addEventListener('mouseover', (e) => {
+            e.stopPropagation();
+            linkedElements.forEach((el) => el.classList.add('selected'));
+        });
+
+        element.addEventListener('mouseout', (e) => {
+            e.stopPropagation();
+            linkedElements.forEach((el) => el.classList.remove('selected'));
+        });
+    }
+};
 
 const createMain = (term: Term) => {
     const svg = document.getElementById('lambdaSvg') as unknown as SVGSVGElement;
@@ -42,29 +63,11 @@ const createMain = (term: Term) => {
         );
 
         indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
-        termElement.innerHTML = fmtTerm(currTerm, config.showNames);
+        termElement.innerHTML = rawfmtTerm(currTerm);
 
         // Add hover listeners to all relevant elements
-        document.querySelectorAll('.line, .textGroup, .label').forEach((element) => {
-            const className = element
-                .getAttribute('class')
-                ?.split(' ')
-                .find((cls) => cls.startsWith('code-'));
-
-            if (className) {
-                const linkedElements = document.querySelectorAll(`.${className}`);
-
-                element.addEventListener('mouseover', (e) => {
-                    e.stopPropagation();
-                    linkedElements.forEach((el) => el.classList.add('selected'));
-                });
-
-                element.addEventListener('mouseout', (e) => {
-                    e.stopPropagation();
-                    linkedElements.forEach((el) => el.classList.remove('selected'));
-                });
-            }
-        });
+        document.getElementById('lambdaSvg')?.querySelectorAll('.line, .label').forEach(addHoverEffect);
+        document.getElementById('lambdaTerm')?.querySelectorAll('.textGroup').forEach(addHoverEffect);
     };
 
     const reduce = () => {
@@ -152,6 +155,8 @@ const addOnClick = (id: string, callback: () => void) => {
     element.onclick = callback;
 };
 
+const term: Term = apply(terms.isZero, apply(terms.pred, apply(terms.succ, terms.five)));
+
 const { reset, back, next, totalReduce, toggle } = createMain(term);
 const { toggleShowNames, toggleLabels, toggleEvalStrategy } = toggle;
 
@@ -168,7 +173,7 @@ document.getElementById('evalStrategy')?.addEventListener('change', (e) => {
     toggleEvalStrategy(value.value as EvalStrategy);
 });
 
-globalThis.addEventListener('keydown', (keyEvent) => {
+document.addEventListener('keydown', (keyEvent) => {
     switch (keyEvent.key) {
         case 'ArrowRight': {
             keyEvent.preventDefault();
@@ -183,3 +188,50 @@ globalThis.addEventListener('keydown', (keyEvent) => {
         }
     }
 });
+
+const createSidebarNode = (name: string, term: Term) => {
+    const wrapper = document.createElement('div');
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg') as SVGSVGElement;
+    const group = renderGroup(svg, 'group');
+    svg.appendChild(group);
+
+    const termDepth = numTermLayers(term) + ABSTRACT_SPACE;
+    const encodedTerm = encode(term);
+
+    const [termEnd] = renderTerm(group, encodedTerm, 0, 0, termDepth, {}, { labels: false, showNames: false });
+    svg.setAttribute(
+        'viewBox',
+        `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`
+    );
+
+    const termName = term.type === TermType.Abstraction ? term.name ?? name : name;
+    const text = document.createElement('p');
+    text.appendChild(document.createTextNode(termName));
+
+    wrapper.appendChild(svg);
+    wrapper.appendChild(text);
+
+    return wrapper;
+};
+
+const sidebar = document.getElementById('sidebar');
+
+Object.entries(terms)
+    .filter(([_, term]) => typeof term === 'object' && term !== null)
+    .forEach(([name, term]) => {
+        const termNode = createSidebarNode(name, term);
+        // const nameLabel = document.createElement('div');
+        // nameLabel.className = 'term-name';
+        // nameLabel.textContent = name;
+        // termNode.insertBefore(nameLabel, termNode.firstChild);
+
+        // // Make the term clickable to load it in the main view
+        // termNode.style.cursor = 'pointer';
+        // termNode.onclick = () => {
+        //     const { reset } = createMain(term);
+        //     reset();
+        // };
+
+        sidebar?.append(termNode);
+    });

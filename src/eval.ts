@@ -120,7 +120,7 @@ const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): 
     }
 };
 
-const reduceWithStrategy = (term: Term, evalStrategy: EvalStrategy) => {
+const reduceWithStrategy = (term: Term, _evalStrategy: EvalStrategy) => {
     return betaReduce(term);
 };
 

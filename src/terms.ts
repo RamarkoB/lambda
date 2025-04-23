@@ -1,15 +1,19 @@
-import { apply, lambda, namedLambda, Term } from './types.ts';
+import { apply, lambda, namedLambda } from './types.ts';
 
 // COMBINATORS
-export const lambdaI = namedLambda('I', 'x', 'x'); // I combinator (identity function)
-export const lambdaU = lambda('x', apply('x', 'x'));
-export const lambdaK = namedLambda('K', 'x', lambda('y', 'x')); // K combinator (export constant function)
-export const lambdaS = namedLambda('S', 'x', lambda('y', lambda('z', apply(apply('x', 'z'), apply('y', 'z'))))); // S combinator (substitution)
-export const lambdaB = namedLambda('B', 'f', lambda('g', lambda('x', apply('f', apply('g', 'x'))))); // B combinator (composition)
-export const lambdaC = namedLambda('C', 'f', lambda('x', lambda('y', apply(apply('f', 'y'), 'x')))); // C combinator (flip arguments)
-export const lambdaW = namedLambda('W', 'f', lambda('x', apply(apply('f', 'x'), 'x'))); // W combinator (duplication)
+export const lambdaI = namedLambda('I Combinator', 'x', 'x'); // I combinator (identity function)
+export const lambdaU = namedLambda('U Combinator', 'x', apply('x', 'x'));
+export const lambdaK = namedLambda('K Combinator', 'x', lambda('y', 'x')); // K combinator (export constant function)
+export const lambdaS = namedLambda(
+    'S Combinator',
+    'x',
+    lambda('y', lambda('z', apply(apply('x', 'z'), apply('y', 'z'))))
+); // S combinator (substitution)
+export const lambdaB = namedLambda('B Combinator', 'f', lambda('g', lambda('x', apply('f', apply('g', 'x'))))); // B combinator (composition)
+export const lambdaC = namedLambda('C Combinator', 'f', lambda('x', lambda('y', apply(apply('f', 'y'), 'x')))); // C combinator (flip arguments)
+export const lambdaW = namedLambda('W Combinator', 'f', lambda('x', apply(apply('f', 'x'), 'x'))); // W combinator (duplication)
 export const lambdaY = namedLambda(
-    'Y',
+    'Y Combinator',
     'f',
     apply(lambda('x', apply('x', 'x')), lambda('x', apply('f', apply('x', 'x'))))
 ); // Y combinator (fixed-point)
@@ -143,9 +147,3 @@ export const factorial = apply(
         )
     )
 );
-
-export const term: Term = apply(isZero, apply(pred, apply(succ, five)));
-// export const term: Term = apply(apply(apply(lambdaIf, lambdaFalse), zero), one);
-// export const term = apply(factorial, one);
-
-export default term;
