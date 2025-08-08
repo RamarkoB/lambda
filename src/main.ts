@@ -1,7 +1,7 @@
 import reduceWithStrategy, { EvalStrategy } from './eval.ts';
 import { numTermLayers, fmtTerm } from './utils.ts';
 import renderTerm, { defaultConfig, HOR_GAP, HOR_OFFSET, renderGroup, VER_GAP, VER_OFFSET } from './render.ts';
-import { apply, encode, TermType, type Term } from './types.ts';
+import { apply, encode, IncompleteTerm, TermType, validateTerm, type Term } from './types.ts';
 import * as terms from './terms.ts';
 
 // NAME FUNCTIONS
@@ -17,8 +17,6 @@ const addHoverEffect = (element: Element) => {
     if (className) {
         const linkedElements = document.querySelectorAll(`#lambdaTerm .${className}, #lambdaSvg .${className}`);
 
-        console.log(linkedElements);
-
         element.addEventListener('mouseover', (e) => {
             e.stopPropagation();
             linkedElements.forEach((el) => el.classList.add('selected'));
@@ -31,7 +29,7 @@ const addHoverEffect = (element: Element) => {
     }
 };
 
-const createMain = (term: Term) => {
+const createMain = (term: IncompleteTerm) => {
     const svg = document.getElementById('lambdaSvg') as unknown as SVGSVGElement;
 
     const indexElement = document.getElementById('index')!;
@@ -40,7 +38,7 @@ const createMain = (term: Term) => {
     let config = defaultConfig;
     let evalStrategy = EvalStrategy.NormalOrder;
 
-    const termHistory: Term[] = [term];
+    const termHistory: IncompleteTerm[] = [term];
     let currTermIndex = 0;
 
     let isTermNormalized = false;
@@ -77,6 +75,10 @@ const createMain = (term: Term) => {
 
         try {
             const currTerm = termHistory[currTermIndex];
+            if (!validateTerm(currTerm)) {
+                return;
+            }
+
             const newTerm = reduceWithStrategy(currTerm, evalStrategy);
 
             if (currTerm === newTerm) {
@@ -116,6 +118,11 @@ const createMain = (term: Term) => {
     };
 
     const totalReduce = () => {
+        const currTerm = termHistory[currTermIndex];
+        if (!validateTerm(currTerm)) {
+            return;
+        }
+
         if (isTermNormalized || isTermError) {
             currTermIndex = termHistory.length - 1;
             render();
@@ -124,6 +131,7 @@ const createMain = (term: Term) => {
 
         reduce();
 
+        // if the term is the same term as the last reduction, we're done
         if (termHistory.at(-2) === termHistory.at(-1)) {
             render();
         } else {
@@ -157,7 +165,8 @@ const addOnClick = (id: string, callback: () => void) => {
     element.onclick = callback;
 };
 
-const term: Term = apply(terms.isZero, apply(terms.pred, apply(terms.succ, terms.five)));
+const term: IncompleteTerm = apply(terms.isZero, apply(terms.pred, apply(terms.succ, terms.five)));
+// const term: IncompleteTerm = apply(terms.isZero, apply(undefined, apply(terms.succ, undefined)));
 
 const { reset, back, next, totalReduce, toggle } = createMain(term);
 const { toggleShowNames, toggleLabels, toggleEvalStrategy } = toggle;
@@ -222,6 +231,8 @@ const sidebar = document.getElementById('sidebar');
 Object.entries(terms)
     .filter(([_, term]) => typeof term === 'object' && term !== null)
     .forEach(([name, term]) => {
+        if (!validateTerm(term)) return;
+
         const termNode = createSidebarNode(name, term);
         // const nameLabel = document.createElement('div');
         // nameLabel.className = 'term-name';

@@ -175,6 +175,10 @@ body {
     stroke: red;
 }
 
+.missing.line {
+    stroke: black;
+}
+
 /* Default state - everything visible */
 .group .label,
 .group .line,
