@@ -1,15 +1,9 @@
-import { Application, EncodedTerm, IncompleteApplication, IncompleteTerm, TermType } from './types.ts';
-
-const HOR_GAP = 15;
-const VER_GAP = 10;
-
-const HOR_OFFSET = 2 * HOR_GAP;
-const VER_OFFSET = 2 * VER_GAP;
+import { Application, IncompleteApplication, IncompleteTerm, TermType } from './types.ts';
+import { EncodedTerm } from './encode.ts';
 
 type Alignment = 'left' | 'middle' | 'right';
 
 type RenderConfig = { labels: boolean; showNames: boolean };
-const defaultConfig: RenderConfig = { labels: true, showNames: true };
 
 type RenderTermFunction = <T extends IncompleteTerm>(
     group: Element,
@@ -20,6 +14,16 @@ type RenderTermFunction = <T extends IncompleteTerm>(
     values: Record<string, number>,
     config: Partial<RenderConfig>
 ) => [number, number, number];
+
+const HOR_GAP = 15;
+const VER_GAP = 10;
+
+const HOR_OFFSET = 2 * HOR_GAP;
+const VER_OFFSET = 2 * VER_GAP;
+
+export const ABSTRACT_SPACE = 2;
+
+const defaultConfig: RenderConfig = { labels: true, showNames: true };
 
 const renderHorLine = (type: TermType, encoding: string, x: number, y: number, x2 = x) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');

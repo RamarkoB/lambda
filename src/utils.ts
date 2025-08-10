@@ -1,4 +1,5 @@
-import { EncodedTerm, IncompleteTerm, TermType } from './types.ts';
+import { IncompleteTerm, TermType } from './types.ts';
+import { EncodedTerm } from './encode.ts';
 
 const txtWrapper = (text: string, type: TermType) => `<span class="text ${type}">${text}</span>`;
 
