@@ -7,7 +7,7 @@ export const lambdaK = namedLambda('K Combinator', 'x', lambda('y', 'x')); // K 
 export const lambdaS = namedLambda(
     'S Combinator',
     'x',
-    lambda('y', lambda('z', apply(apply('x', 'z'), apply('y', 'z'))))
+    lambda('y', lambda('z', apply(apply('x', 'z'), apply('y', 'z')))),
 ); // S combinator (substitution)
 export const lambdaB = namedLambda('B Combinator', 'f', lambda('g', lambda('x', apply('f', apply('g', 'x'))))); // B combinator (composition)
 export const lambdaC = namedLambda('C Combinator', 'f', lambda('x', lambda('y', apply(apply('f', 'y'), 'x')))); // C combinator (flip arguments)
@@ -15,7 +15,7 @@ export const lambdaW = namedLambda('W Combinator', 'f', lambda('x', apply(apply(
 export const lambdaY = namedLambda(
     'Y Combinator',
     'f',
-    apply(lambda('x', apply('x', 'x')), lambda('x', apply('f', apply('x', 'x'))))
+    apply(lambda('x', apply('x', 'x')), lambda('x', apply('f', apply('x', 'x')))),
 ); // Y combinator (fixed-point)
 
 export const omega = apply(lambdaU, lambdaU);
@@ -53,7 +53,7 @@ export const mult = namedLambda('mult', 'x', lambda('y', lambda('f', apply('x', 
 export const plus = namedLambda(
     'plus',
     'm',
-    lambda('n', lambda('f', lambda('x', apply(apply('m', 'f'), apply(apply('n', 'f'), 'x')))))
+    lambda('n', lambda('f', lambda('x', apply(apply('m', 'f'), apply(apply('n', 'f'), 'x'))))),
 );
 
 export const pred = namedLambda(
@@ -65,10 +65,10 @@ export const pred = namedLambda(
             'x',
             apply(
                 apply(apply('n', lambda('g', lambda('h', apply('h', apply('g', 'f'))))), lambda('u', 'x')),
-                lambda('u', 'u')
-            )
-        )
-    )
+                lambda('u', 'u'),
+            ),
+        ),
+    ),
 );
 
 // Subtraction
@@ -84,7 +84,7 @@ export const leq = namedLambda('leq', 'm', lambda('n', apply(isZero, apply(apply
 export const eq = namedLambda(
     'eq',
     'm',
-    lambda('n', apply(apply(and, apply(apply(leq, 'm'), 'n')), apply(apply(leq, 'n'), 'm')))
+    lambda('n', apply(apply(and, apply(apply(leq, 'm'), 'n')), apply(apply(leq, 'n'), 'm'))),
 );
 
 // PAIRS
@@ -103,14 +103,14 @@ export const nil = namedLambda('nil', 'c', lambda('n', 'n'));
 export const cons = namedLambda(
     'cons',
     'h',
-    lambda('t', lambda('c', lambda('n', apply(apply('c', 'h'), apply(apply('t', 'c'), 'n')))))
+    lambda('t', lambda('c', lambda('n', apply(apply('c', 'h'), apply(apply('t', 'c'), 'n'))))),
 );
 
 // List isEmpty check
 export const isEmpty = namedLambda(
     'isEmpty',
     'list',
-    apply(apply('list', lambda('h', lambda('t', lambdaFalse))), lambdaTrue)
+    apply(apply('list', lambda('h', lambda('t', lambdaFalse))), lambdaTrue),
 );
 
 // List head
@@ -120,7 +120,7 @@ export const head = namedLambda('head', 'list', apply(apply('list', lambda('h', 
 export const tail = namedLambda(
     'tail',
     'list',
-    apply(apply('list', lambda('h', lambda('t', lambda('c', lambda('n', apply(apply('t', 'c'), 'n')))))), nil)
+    apply(apply('list', lambda('h', lambda('t', lambda('c', lambda('n', apply(apply('t', 'c'), 'n')))))), nil),
 );
 
 // Fixed-point combinator with named steps
@@ -129,8 +129,8 @@ export const lambdaZ = namedLambda(
     'f',
     apply(
         lambda('x', lambda('y', apply('f', lambda('v', apply(apply('x', 'x'), 'y'))))),
-        lambda('x', lambda('y', apply('f', lambda('v', apply(apply('x', 'x'), 'y')))))
-    )
+        lambda('x', lambda('y', apply('f', lambda('v', apply(apply('x', 'x'), 'y'))))),
+    ),
 );
 
 // Factorial using Z combinator
@@ -142,8 +142,8 @@ export const factorial = apply(
             'n',
             apply(
                 apply(apply(lambdaIf, apply(isZero, 'n')), one),
-                apply(apply(mult, 'n'), apply('f', apply(pred, 'n')))
-            )
-        )
-    )
+                apply(apply(mult, 'n'), apply('f', apply(pred, 'n'))),
+            ),
+        ),
+    ),
 );

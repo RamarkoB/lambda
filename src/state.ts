@@ -1,16 +1,16 @@
 import reduceWithStrategy, { EvalStrategy } from './eval.ts';
 import renderTerm, {
+    ABSTRACT_SPACE,
     defaultConfig,
-    RenderConfig,
-    renderGroup,
     HOR_GAP,
     HOR_OFFSET,
+    RenderConfig,
+    renderGroup,
     VER_GAP,
     VER_OFFSET,
-    ABSTRACT_SPACE
 } from './render.ts';
 import { IncompleteTerm, validateTerm } from './types.ts';
-import { numTermLayers, fmtTerm } from './utils.ts';
+import { fmtTerm, numTermLayers } from './utils.ts';
 import { encode } from './encode.ts';
 
 type AppState = {
@@ -53,7 +53,7 @@ const initializeState = (term: IncompleteTerm): AppState => ({
     evalStrategy: EvalStrategy.NormalOrder,
 
     isError: false,
-    isNormalized: false
+    isNormalized: false,
 });
 
 const renderState = (state: AppState) => {
@@ -76,7 +76,7 @@ const renderState = (state: AppState) => {
     const [termEnd] = renderTerm(group, currTerm, 0, 0, termDepth, {}, state.config);
     svg.setAttribute(
         'viewBox',
-        `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`
+        `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`,
     );
 
     indexElement.innerText = `${state.currTermIndex + 1} \\ ${state.termHistory.length}`;
@@ -123,15 +123,13 @@ const totalReduce = (state: AppState): AppState => {
 
     // If the term is the same as the last reduction, we're done
     return newState.termHistory.length >= 2 &&
-        newState.termHistory[newState.termHistory.length - 2] === newState.termHistory[newState.termHistory.length - 1]
+            newState.termHistory[newState.termHistory.length - 2] === newState.termHistory[newState.termHistory.length - 1]
         ? newState
         : totalReduce(newState);
 };
 
 const next = (state: AppState): AppState =>
-    state.currTermIndex + 1 === state.termHistory.length
-        ? reduce(state)
-        : { ...state, currTermIndex: state.currTermIndex + 1 };
+    state.currTermIndex + 1 === state.termHistory.length ? reduce(state) : { ...state, currTermIndex: state.currTermIndex + 1 };
 
 const back = (state: AppState): AppState => ({ ...state, currTermIndex: Math.max(0, state.currTermIndex - 1) });
 
@@ -139,27 +137,16 @@ const reset = (state: AppState): AppState => ({ ...state, currTermIndex: 0 });
 
 const toggleLabels = ({ config, ...state }: AppState): AppState => ({
     ...state,
-    config: { ...config, labels: !config.labels }
+    config: { ...config, labels: !config.labels },
 });
 
 const toggleShowNames = ({ config, ...state }: AppState): AppState => ({
     ...state,
-    config: { ...config, showNames: !config.showNames }
+    config: { ...config, showNames: !config.showNames },
 });
 
 const toggleEvalStrategy = (state: AppState, evalStrategy: EvalStrategy): AppState => ({ ...state, evalStrategy });
 
 export type { AppState };
 
-export {
-    reduce,
-    reset,
-    back,
-    next,
-    totalReduce,
-    toggleLabels,
-    toggleShowNames,
-    toggleEvalStrategy,
-    initializeState,
-    renderState
-};
+export { back, initializeState, next, reduce, renderState, reset, toggleEvalStrategy, toggleLabels, toggleShowNames, totalReduce };

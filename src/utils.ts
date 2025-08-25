@@ -20,8 +20,7 @@ const fmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: bo
         case TermType.Abstraction: {
             const formattedVal = txtWrapper(`λ${term.param.val}.`, term.type);
             const formattedBody = term.body ? fmtTerm(term.body, isShowNames) : fmtMissingTerm(`${term.encoding}1`);
-            formattedTerm =
-                isShowNames && term.name ? txtWrapper(term.name, TermType.Value) : `${formattedVal}${formattedBody}`;
+            formattedTerm = isShowNames && term.name ? txtWrapper(term.name, TermType.Value) : `${formattedVal}${formattedBody}`;
             break;
         }
 
@@ -80,4 +79,4 @@ const numTermLayers = (term: IncompleteTerm | undefined): number => {
     }
 };
 
-export { rawfmtTerm, fmtTerm, numTermLayers };
+export { fmtTerm, numTermLayers, rawfmtTerm };

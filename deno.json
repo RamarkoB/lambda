@@ -4,7 +4,7 @@
         "dev": "deno run -A --watch src/main.ts"
     },
     "fmt": {
-        "lineWidth": 120,
+        "lineWidth": 140,
         "indentWidth": 4,
         "singleQuote": true
     },

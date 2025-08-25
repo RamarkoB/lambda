@@ -1,14 +1,5 @@
 import { EvalStrategy } from './eval.ts';
-import {
-    AppState,
-    reset,
-    back,
-    next,
-    totalReduce,
-    toggleLabels,
-    toggleShowNames,
-    toggleEvalStrategy
-} from './state.ts';
+import { AppState, back, next, reset, toggleEvalStrategy, toggleLabels, toggleShowNames, totalReduce } from './state.ts';
 
 const addOnClick = (id: string, callback: () => void) => {
     const element = document.getElementById(id);
@@ -57,6 +48,6 @@ export const initializeInteract = (handleUpdate: (updateCallback: (newState: App
     addHandleEvalStrategyUpdate((evalStrategy) => handleUpdate((state) => toggleEvalStrategy(state, evalStrategy)));
     addHandleKeydown(
         () => handleUpdate(next),
-        () => handleUpdate(back)
+        () => handleUpdate(back),
     );
 };

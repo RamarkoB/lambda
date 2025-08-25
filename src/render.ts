@@ -12,7 +12,7 @@ type RenderTermFunction = <T extends IncompleteTerm>(
     verTopLayer: number,
     verBottomLayer: number,
     values: Record<string, number>,
-    config: Partial<RenderConfig>
+    config: Partial<RenderConfig>,
 ) => [number, number, number];
 
 const HOR_GAP = 15;
@@ -58,7 +58,7 @@ const renderLabel = (
     encoding: string,
     x: number,
     y: number,
-    align: Alignment = 'middle'
+    align: Alignment = 'middle',
 ) => {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', (x * HOR_GAP + HOR_OFFSET).toString());
@@ -80,13 +80,12 @@ const renderAbstractionGap = (
     labels: boolean,
     horFuncLayer: number,
     term: Application | IncompleteApplication,
-    termStart: number
+    termStart: number,
 ): [number, number] => {
     const abstractGap = labels ? 2 : 1;
     const needsGap = term.func?.type === TermType.Abstraction || term.arg?.type === TermType.Abstraction;
     const newTermStart = horFuncLayer + (!term.func ? abstractGap - 1 : needsGap ? abstractGap : 0);
-    const newGroupStart =
-        term.func?.type === TermType.Value && term.arg?.type === TermType.Application ? termStart : newTermStart;
+    const newGroupStart = term.func?.type === TermType.Value && term.arg?.type === TermType.Application ? termStart : newTermStart;
     return [newTermStart, newGroupStart];
 };
 
@@ -126,7 +125,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                     : renderMissingTerm(group, `${term.encoding}1`, horLayers, newVerTopLayer, verBottomLayer, config);
 
                 group.append(
-                    renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5)
+                    renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5),
                 );
                 if (labels) {
                     group.append(
@@ -136,8 +135,8 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                             term.encoding,
                             groupStart - 1.5,
                             verLineLayer + 0.25,
-                            'right'
-                        )
+                            'right',
+                        ),
                     );
                 }
 
@@ -177,7 +176,7 @@ const renderMissingTerm = (
     horLayers: number | [number, number],
     verTopLayer: number,
     verBottomLayer: number,
-    config: Partial<RenderConfig>
+    config: Partial<RenderConfig>,
 ): [number, number, number] => {
     const [termStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
