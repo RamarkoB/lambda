@@ -13,6 +13,12 @@ import { IncompleteTerm, validateTerm } from './types.ts';
 import { fmtTerm, numTermLayers } from './utils.ts';
 import { encode } from './encode.ts';
 
+enum AppStatus {
+    default,
+    error,
+    normalized
+}
+
 type AppState = {
     config: RenderConfig;
     evalStrategy: EvalStrategy;
@@ -20,8 +26,7 @@ type AppState = {
     termHistory: IncompleteTerm[];
     currTermIndex: number;
 
-    isError: boolean;
-    isNormalized: boolean;
+    status: AppStatus;
 };
 
 const addHoverEffect = (element: Element) => {
@@ -51,9 +56,7 @@ const initializeState = (term: IncompleteTerm): AppState => ({
 
     config: defaultConfig,
     evalStrategy: EvalStrategy.NormalOrder,
-
-    isError: false,
-    isNormalized: false,
+    status: AppStatus.default,
 });
 
 const renderState = (state: AppState) => {
@@ -88,29 +91,29 @@ const renderState = (state: AppState) => {
 };
 
 const reduce = (state: AppState): AppState => {
-    if (state.isNormalized || state.isError) {
+    if (state.status !== AppStatus.default) {
         return state;
     }
 
     try {
         const currTerm = state.termHistory[state.currTermIndex];
         if (!validateTerm(currTerm)) {
-            return { ...state, isError: true };
+            return { ...state, status: AppStatus.error };
         }
 
         const newTerm = reduceWithStrategy(currTerm, state.evalStrategy);
 
         return currTerm === newTerm
-            ? { ...state, isNormalized: true }
+            ? { ...state, status: AppStatus.normalized }
             : { ...state, currTermIndex: state.currTermIndex + 1, termHistory: [...state.termHistory, newTerm] };
     } catch (_e) {
         console.log('Maxxed out baby!');
-        return { ...state, isError: true };
+        return { ...state, status: AppStatus.error };
     }
 };
 
 const totalReduce = (state: AppState): AppState => {
-    if (state.isNormalized || state.isError) {
+    if (state.status !== AppStatus.default) {
         return { ...state, currTermIndex: state.termHistory.length - 1 };
     }
 

@@ -1,4 +1,4 @@
-import { apply, lambda, namedLambda } from './types.ts';
+import { apply, lambda, namedApply, namedLambda } from './types.ts';
 
 // COMBINATORS
 export const lambdaI = namedLambda('I Combinator', 'x', 'x'); // I combinator (identity function)
@@ -134,7 +134,8 @@ export const lambdaZ = namedLambda(
 );
 
 // Factorial using Z combinator
-export const factorial = apply(
+export const factorial = namedApply(
+    "factorial",
     lambdaZ,
     lambda(
         'f',
