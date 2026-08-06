@@ -8,7 +8,10 @@ const OPEN = txtWrapper('(', TermType.Application);
 const CLOSE = txtWrapper(')', TermType.Application);
 
 // LOG FUNCTIONS
-const fmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: boolean): string => {
+const fmtTerm = <T extends IncompleteTerm>(
+    term: EncodedTerm<T>,
+    isShowNames: boolean,
+): string => {
     let formattedTerm;
 
     switch (term.type) {
@@ -37,10 +40,10 @@ const fmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: bo
 
 const fmtMissingTerm = (encoding: string) => `<span class="textGroup code-${encoding}">[]</span>`;
 
-const rawfmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T> | undefined): string => {
-    if (!term) {
-        return '[]';
-    }
+const rawfmtTerm = <T extends IncompleteTerm>(
+    term: EncodedTerm<T> | undefined,
+): string => {
+    if (!term) return '[]';
 
     switch (term.type) {
         case TermType.Value:
@@ -75,7 +78,9 @@ const numTermLayers = (term: IncompleteTerm | undefined): number => {
         case TermType.Abstraction:
             return 1 + numTermLayers(term.body);
         case TermType.Application:
-            return 1 + Math.max(numTermLayers(term.func), numTermLayers(term.arg));
+            return (
+                1 + Math.max(numTermLayers(term.func), numTermLayers(term.arg))
+            );
     }
 };
 

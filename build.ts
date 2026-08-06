@@ -15,7 +15,7 @@ await esbuild.build({
 });
 
 // Copy index.html to dist directory
-await copyFile('./index.html', './dist/index.html');
-await copyFile('./styles.css', './dist/styles.css');
+await copyFile('./static/index.html', './dist/index.html');
+await copyFile('./static/styles.css', './dist/styles.css');
 
 esbuild.stop();

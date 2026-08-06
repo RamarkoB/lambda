@@ -135,7 +135,7 @@ export const lambdaZ = namedLambda(
 
 // Factorial using Z combinator
 export const factorial = namedApply(
-    "factorial",
+    'factorial',
     lambdaZ,
     lambda(
         'f',

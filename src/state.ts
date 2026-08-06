@@ -16,12 +16,13 @@ import { encode } from './encode.ts';
 enum AppStatus {
     default,
     error,
-    normalized
+    normalized,
 }
 
 type AppState = {
     config: RenderConfig;
     evalStrategy: EvalStrategy;
+    selectedTerm: IncompleteTerm | undefined;
 
     termHistory: IncompleteTerm[];
     currTermIndex: number;
@@ -51,13 +52,16 @@ const addHoverEffect = (element: Element) => {
 };
 
 const initializeState = (term: IncompleteTerm): AppState => ({
-    termHistory: [term],
-    currTermIndex: 0,
-
     config: defaultConfig,
     evalStrategy: EvalStrategy.NormalOrder,
     status: AppStatus.default,
+    selectedTerm: undefined,
+
+    termHistory: [term],
+    currTermIndex: 0,
 });
+
+const selectElement = (state: AppState, term: IncompleteTerm) => ({ ...state, selectedTerm: term });
 
 const renderState = (state: AppState) => {
     const svg = document.getElementById('lambdaSvg') as unknown as SVGSVGElement;
@@ -152,4 +156,16 @@ const toggleEvalStrategy = (state: AppState, evalStrategy: EvalStrategy): AppSta
 
 export type { AppState };
 
-export { back, initializeState, next, reduce, renderState, reset, toggleEvalStrategy, toggleLabels, toggleShowNames, totalReduce };
+export {
+    back,
+    initializeState,
+    next,
+    reduce,
+    renderState,
+    reset,
+    selectElement,
+    toggleEvalStrategy,
+    toggleLabels,
+    toggleShowNames,
+    totalReduce,
+};
