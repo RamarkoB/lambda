@@ -4,7 +4,7 @@ import { AppState, back, next, reset, toggleEvalStrategy, toggleLabels, toggleSh
 const addOnClick = (id: string, callback: () => void) => {
     const element = document.getElementById(id);
     if (!element) return;
-    element.onclick = callback;
+    element.addEventListener('click', callback);
 };
 
 const addHandleEvalStrategyUpdate = (callback: (newSrategy: EvalStrategy) => void) => {
@@ -33,7 +33,7 @@ const addHandleKeydown = (rightCallback: () => void, leftCallback: () => void) =
 };
 
 export const initializeInteract = (handleUpdate: (updateCallback: (newState: AppState) => AppState) => void) => {
-    // Initial render
+    // initial render
     handleUpdate((state) => state);
 
     // add button handling

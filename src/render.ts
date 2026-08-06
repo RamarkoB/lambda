@@ -6,7 +6,7 @@ type Alignment = 'left' | 'middle' | 'right';
 type RenderConfig = { labels: boolean; showNames: boolean };
 
 type RenderTermFunction = <T extends IncompleteTerm>(
-    group: Element,
+    group: SVGGElement,
     term: EncodedTerm<T>,
     horLayers: number | [number, number],
     verTopLayer: number,
@@ -69,7 +69,7 @@ const renderLabel = (
     return text;
 };
 
-const renderGroup = (parent: Element, className: string): Element => {
+const renderGroup = (parent: SVGGElement, className: string): SVGGElement => {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', className);
     parent.append(group);
@@ -171,7 +171,7 @@ const renderChildTerm: RenderTermFunction = (group, term, ...renderArgs) =>
     renderTerm(renderGroup(group, `group ${term.type} ${term.encoding}`), term, ...renderArgs);
 
 const renderMissingTerm = (
-    group: Element,
+    group: SVGGElement,
     encoding: string,
     horLayers: number | [number, number],
     verTopLayer: number,
@@ -184,8 +184,18 @@ const renderMissingTerm = (
 
     missingGroup.append(renderVerLine('missing', encoding, termStart, verBottomLayer, 1));
     if (config.labels) {
-        missingGroup.append(renderLabel('missing', '[]', encoding, termStart, 0));
+        missingGroup.append(renderLabel('missing', '[ ]', encoding, termStart, 0));
     }
+
+    missingGroup.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
+
+    missingGroup.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const data = event.dataTransfer?.getData('text');
+        console.log(data);
+    });
 
     return [termStart + 2, verTopLayer, verBottomLayer];
 };

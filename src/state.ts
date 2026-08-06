@@ -22,7 +22,6 @@ enum AppStatus {
 type AppState = {
     config: RenderConfig;
     evalStrategy: EvalStrategy;
-    selectedTerm: IncompleteTerm | undefined;
 
     termHistory: IncompleteTerm[];
     currTermIndex: number;
@@ -37,7 +36,7 @@ const addHoverEffect = (element: Element) => {
         .find((cls) => cls.startsWith('code-'));
 
     if (className) {
-        const linkedElements = document.querySelectorAll(`#lambdaTerm .${className}, #lambdaSvg .${className}`);
+        const linkedElements = document.querySelectorAll(`#lambdaTerm .${className}, #lambdaView .${className}`);
 
         element.addEventListener('mouseover', (e) => {
             e.stopPropagation();
@@ -55,33 +54,36 @@ const initializeState = (term: IncompleteTerm): AppState => ({
     config: defaultConfig,
     evalStrategy: EvalStrategy.NormalOrder,
     status: AppStatus.default,
-    selectedTerm: undefined,
 
     termHistory: [term],
     currTermIndex: 0,
 });
 
-const selectElement = (state: AppState, term: IncompleteTerm) => ({ ...state, selectedTerm: term });
-
-const renderState = (state: AppState) => {
-    const svg = document.getElementById('lambdaSvg') as unknown as SVGSVGElement;
-
+const renderState = (view: SVGSVGElement, state: AppState) => {
     const indexElement = document.getElementById('index')!;
     const termElement = document.getElementById('lambdaTerm')!;
 
     // Clear previous content
-    if (svg.firstChild) {
-        svg.removeChild(svg.firstChild);
+    if (view.firstChild) {
+        view.removeChild(view.firstChild);
     }
 
-    const group = renderGroup(svg, 'group');
-    svg.appendChild(group);
+    const group = renderGroup(view, 'group');
+    view.appendChild(group);
 
     const currTerm = encode(state.termHistory[state.currTermIndex]);
     const termDepth = numTermLayers(currTerm) + ABSTRACT_SPACE;
 
-    const [termEnd] = renderTerm(group, currTerm, 0, 0, termDepth, {}, state.config);
-    svg.setAttribute(
+    const [termEnd] = renderTerm(
+        group,
+        currTerm,
+        0,
+        0,
+        termDepth,
+        {},
+        state.config,
+    );
+    view.setAttribute(
         'viewBox',
         `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`,
     );
@@ -90,14 +92,19 @@ const renderState = (state: AppState) => {
     termElement.innerHTML = fmtTerm(currTerm, state.config.showNames);
 
     // Add hover listeners to all relevant elements
-    document.getElementById('lambdaSvg')?.querySelectorAll('.line, .label').forEach(addHoverEffect);
-    document.getElementById('lambdaTerm')?.querySelectorAll('.textGroup').forEach(addHoverEffect);
+    document
+        .getElementById('lambdaView')
+        ?.querySelectorAll('.line, .label')
+        .forEach(addHoverEffect);
+
+    document
+        .getElementById('lambdaTerm')
+        ?.querySelectorAll('.textGroup')
+        .forEach(addHoverEffect);
 };
 
 const reduce = (state: AppState): AppState => {
-    if (state.status !== AppStatus.default) {
-        return state;
-    }
+    if (state.status !== AppStatus.default) return state;
 
     try {
         const currTerm = state.termHistory[state.currTermIndex];
@@ -156,16 +163,4 @@ const toggleEvalStrategy = (state: AppState, evalStrategy: EvalStrategy): AppSta
 
 export type { AppState };
 
-export {
-    back,
-    initializeState,
-    next,
-    reduce,
-    renderState,
-    reset,
-    selectElement,
-    toggleEvalStrategy,
-    toggleLabels,
-    toggleShowNames,
-    totalReduce,
-};
+export { back, initializeState, next, reduce, renderState, reset, toggleEvalStrategy, toggleLabels, toggleShowNames, totalReduce };

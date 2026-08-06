@@ -2,7 +2,6 @@ import renderTerm, { ABSTRACT_SPACE, HOR_GAP, HOR_OFFSET, renderGroup, VER_GAP, 
 import { apply, createValue, IncompleteTerm, lambda, TermType } from './types.ts';
 import { numTermLayers } from './utils.ts';
 import { encode } from './encode.ts';
-import { AppState } from './state.ts';
 
 const createSidebarNode = (name: string, term: IncompleteTerm) => {
     const sidebarNode = document.createElement('div');
@@ -49,16 +48,17 @@ const terms: [string, IncompleteTerm][] = [
     ['apply', apply(undefined, undefined)],
 ];
 
-export const initializeSidebar = (state: AppState, updateState: (state: AppState, term: IncompleteTerm) => void) => {
+export const initializeSidebar = () => {
     const sidebar = document.getElementById('sidebar');
 
     terms.forEach(([name, term]) => {
         const termNode = createSidebarNode(name, term);
-        termNode.ondrag = (event) => {
+        termNode.addEventListener('dragstart', (event) => {
             if (!event.target) return;
 
-            event.dataTransfer?.setData('text', JSON.stringify(term));
-        };
+            event.dataTransfer?.clearData();
+            event.dataTransfer?.setData('text/plain', JSON.stringify(term));
+        });
 
         sidebar?.append(termNode);
     });
