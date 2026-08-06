@@ -63,5 +63,3 @@ export const initializeSidebar = (state: AppState, updateState: (state: AppState
         sidebar?.append(termNode);
     });
 };
-
-
