@@ -268,7 +268,7 @@ const renderState = (view: SVGElement, state: AppState) => {
         {},
         state.config,
     );
-    view.setAttribute('viewBox', getViewBoxSize(termEnd - 1, termDepth));
+    view.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 
     indexElement.innerText = `${state.currTermIndex + 1} \\ ${state.termHistory.length}`;
     termElement.innerHTML = fmtTerm(currTerm, state.config.showNames);

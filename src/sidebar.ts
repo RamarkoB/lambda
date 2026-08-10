@@ -25,7 +25,7 @@ const createSidebarNode = (name: string, term: IncompleteTerm) => {
         {},
         { labels: false, showNames: false },
     );
-    svg.setAttribute('viewBox', getViewBoxSize(termEnd - 1, termDepth));
+    svg.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 
     const termName = term.type === TermType.Abstraction ? (term.name ?? name) : name;
     const text = document.createElement('p');
