@@ -1,11 +1,13 @@
-import { apply } from './types.ts';
-import { AppState, initializeState, renderState } from './state.ts';
 import { initializeInteract } from './interact.ts';
+import { renderState } from './render.ts';
 import { initializeSidebar } from './sidebar.ts';
+import { AppState, initializeState } from './state.ts';
 import * as terms from './terms.ts';
+import { apply } from './types.ts';
 
 const view = document.getElementById('lambdaView') as unknown as SVGSVGElement;
-const term = apply(terms.isZero, apply(terms.pred, apply(terms.succ, undefined)));
+// const term = apply(terms.isZero, apply(terms.pred, apply(terms.succ, undefined)));
+const term = apply(terms.isZero, apply(terms.pred, apply(terms.succ, terms.five)));
 
 let state = initializeState(term);
 

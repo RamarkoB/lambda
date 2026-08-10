@@ -1,5 +1,5 @@
 import { EvalStrategy } from './eval.ts';
-import { AppState, back, next, reset, toggleEvalStrategy, toggleLabels, toggleShowNames, totalReduce } from './state.ts';
+import { AppState, onBack, onEvalStrategyToggle, onLabelToggle, onNext, onReset, onShowNameToggle, totalReduce } from './state.ts';
 
 const addOnClick = (id: string, callback: () => void) => {
     const element = document.getElementById(id);
@@ -32,22 +32,23 @@ const addHandleKeydown = (rightCallback: () => void, leftCallback: () => void) =
     });
 };
 
+// `handleUpdate` is a function that consumes a state update function, and binds it to to the global state, so we can pass it to event handlers
 export const initializeInteract = (handleUpdate: (updateCallback: (newState: AppState) => AppState) => void) => {
     // initial render
     handleUpdate((state) => state);
 
     // add button handling
-    addOnClick('reset', () => handleUpdate(reset));
-    addOnClick('back', () => handleUpdate(back));
-    addOnClick('next', () => handleUpdate(next));
+    addOnClick('reset', () => handleUpdate(onReset));
+    addOnClick('back', () => handleUpdate(onBack));
+    addOnClick('next', () => handleUpdate(onNext));
     addOnClick('totalReduce', () => handleUpdate(totalReduce));
 
-    addOnClick('showNames', () => handleUpdate(toggleShowNames));
-    addOnClick('toggleLabels', () => handleUpdate(toggleLabels));
+    addOnClick('showNames', () => handleUpdate(onShowNameToggle));
+    addOnClick('toggleLabels', () => handleUpdate(onLabelToggle));
 
-    addHandleEvalStrategyUpdate((evalStrategy) => handleUpdate((state) => toggleEvalStrategy(state, evalStrategy)));
+    addHandleEvalStrategyUpdate((evalStrategy) => handleUpdate((state) => onEvalStrategyToggle(state, evalStrategy)));
     addHandleKeydown(
-        () => handleUpdate(next),
-        () => handleUpdate(back),
+        () => handleUpdate(onNext),
+        () => handleUpdate(onBack),
     );
 };

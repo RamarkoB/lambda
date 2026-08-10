@@ -1,5 +1,7 @@
+import { encode, type EncodedTerm } from './encode.ts';
+import { AppState } from './state.ts';
 import { Application, IncompleteApplication, IncompleteTerm, TermType } from './types.ts';
-import { EncodedTerm } from './encode.ts';
+import { fmtTerm, numTermLayers } from './utils.ts';
 
 type Alignment = 'left' | 'middle' | 'right';
 
@@ -24,6 +26,45 @@ const VER_OFFSET = 2 * VER_GAP;
 export const ABSTRACT_SPACE = 2;
 
 const defaultConfig: RenderConfig = { labels: true, showNames: true };
+
+const addHoverEffect = (element: Element) => {
+    const className = element
+        .getAttribute('class')
+        ?.split(' ')
+        .find((cls) => cls.startsWith('code-'));
+
+    if (className) {
+        const linkedElements = document.querySelectorAll(
+            `#lambdaTerm .${className}, #lambdaView .${className}`,
+        );
+
+        element.addEventListener('mouseover', (e) => {
+            e.stopPropagation();
+            linkedElements.forEach((el) => el.classList.add('selected'));
+        });
+
+        element.addEventListener('mouseout', (e) => {
+            e.stopPropagation();
+            linkedElements.forEach((el) => el.classList.remove('selected'));
+        });
+    }
+};
+
+const addMissingEffect = (element: Element) => {
+    if (!(element instanceof SVGElement)) return;
+
+    const embedding = element.getAttribute('class');
+
+    element.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
+
+    element.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const data = event.dataTransfer?.getData('text');
+        console.log(embedding, data);
+    });
+};
 
 const renderHorLine = (type: TermType, encoding: string, x: number, y: number, x2 = x) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -69,7 +110,7 @@ const renderLabel = (
     return text;
 };
 
-const renderGroup = (parent: SVGGElement, className: string): SVGGElement => {
+const renderGroup = (parent: SVGElement, className: string): SVGGElement => {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', className);
     parent.append(group);
@@ -180,7 +221,7 @@ const renderMissingTerm = (
 ): [number, number, number] => {
     const [termStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
-    const missingGroup = renderGroup(group, `group missing ${encoding}`);
+    const missingGroup = renderGroup(group, `group missing term-${encoding}`);
 
     missingGroup.append(renderVerLine('missing', encoding, termStart, verBottomLayer, 1));
     if (config.labels) {
@@ -200,6 +241,46 @@ const renderMissingTerm = (
     return [termStart + 2, verTopLayer, verBottomLayer];
 };
 
-export { defaultConfig, HOR_GAP, HOR_OFFSET, renderGroup, VER_GAP, VER_OFFSET };
+const getViewBoxSize = (termEnd: number, termDepth: number) =>
+    `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`;
+
+const renderState = (view: SVGElement, state: AppState) => {
+    const indexElement = document.getElementById('index')!;
+    const termElement = document.getElementById('lambdaTerm')!;
+
+    // Clear previous content
+    if (view.firstChild) {
+        view.removeChild(view.firstChild);
+    }
+
+    const group = renderGroup(view, 'group');
+    view.appendChild(group);
+
+    const currTerm = encode(state.termHistory[state.currTermIndex]);
+    const termDepth = numTermLayers(currTerm) + ABSTRACT_SPACE;
+
+    const [termEnd] = renderTerm(
+        group,
+        currTerm,
+        0,
+        0,
+        termDepth,
+        {},
+        state.config,
+    );
+    view.setAttribute('viewBox', getViewBoxSize(termEnd - 1, termDepth));
+
+    indexElement.innerText = `${state.currTermIndex + 1} \\ ${state.termHistory.length}`;
+    termElement.innerHTML = fmtTerm(currTerm, state.config.showNames);
+
+    // Add hover listeners to all relevant elements
+    view.querySelectorAll('.line, .label').forEach(addHoverEffect);
+    termElement.querySelectorAll('.textGroup').forEach(addHoverEffect);
+
+    // add drag and drop listeners to all missing elements
+    view.querySelectorAll('.missing').forEach(addMissingEffect);
+};
+
+export { defaultConfig, getViewBoxSize, renderGroup, renderState };
 export type { RenderConfig };
 export default renderTerm;
