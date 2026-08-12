@@ -46,6 +46,8 @@ type IsIncompleteAbstraction<T extends string, TBody> = TBody extends MissingTer
     : Abstraction<T>;
 
 // CONSTRUCTORS
+const MISSING: MissingTerm = { type: TermType.Missing };
+
 const createValue = <T extends string>(val: T): Value<T> => ({ type: TermType.Value, val });
 
 const createTerm = <TBody extends TermChild>(
@@ -56,34 +58,32 @@ const createTerm = <TBody extends TermChild>(
 const lambda = <T extends string, TBody extends TermChild>(
     param: T,
     body: TBody,
-): IsIncompleteAbstraction<T, TBody> => ({
+) => ({
     type: TermType.Abstraction,
     param: createValue(param),
-    body: body ? createTerm(body) : undefined,
+    body: createTerm(body),
 } as IsIncompleteAbstraction<T, TBody>);
 
 const namedLambda = <T extends string, TBody extends TermChild>(
     name: string,
     param: T,
     bound: TBody,
-): IsIncompleteAbstraction<T, TBody> => ({ name, ...lambda(param, bound) } as IsIncompleteAbstraction<T, TBody>);
+) => ({ name, ...lambda(param, bound) } as IsIncompleteAbstraction<T, TBody>);
 
 const apply = <TFunc extends TermChild, TArg extends TermChild>(
     func: TFunc,
     arg: TArg,
-): IsIncompleteApplication<TFunc, TArg> => ({
+) => ({
     type: TermType.Application,
-    func: func ? createTerm(func) : undefined,
-    arg: arg ? createTerm(arg) : undefined,
-} as IsIncompleteApplication<TFunc, TArg>);
+    func: createTerm(func),
+    arg: createTerm(arg),
+}) as IsIncompleteApplication<TFunc, TArg>;
 
 const namedApply = <TFunc extends TermChild, TArg extends TermChild>(
     name: string,
     func: TFunc,
     arg: TArg,
-): IsIncompleteApplication<TFunc, TArg> => ({ name, ...apply(func, arg) } as IsIncompleteApplication<TFunc, TArg>);
-
-const MISSING: MissingTerm = { type: TermType.Missing };
+) => ({ name, ...apply(func, arg) } as IsIncompleteApplication<TFunc, TArg>);
 
 // VALIDATION AND ENCODING
 const validateTerm = (term: IncompleteTerm): term is Term => {

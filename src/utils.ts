@@ -1,44 +1,35 @@
 import { EncodedTerm } from './encode.ts';
 import { IncompleteTerm, TermType } from './types.ts';
 
-const txtWrapper = (text: string, type: TermType) => `<span class="text ${type}">${text}</span>`;
+const txtWrapper = (type: TermType, text: string) => `<span class="text ${type}">${text}</span>`;
+const txtGroupWrapper = (encoding: string, term: string) => `<span class="textGroup code-${encoding}">${term}</span>`;
 
 // Punctuation constants
-const OPEN = txtWrapper('(', TermType.Application);
-const CLOSE = txtWrapper(')', TermType.Application);
+const OPEN = txtWrapper(TermType.Application, '(');
+const CLOSE = txtWrapper(TermType.Application, ')');
 
 // LOG FUNCTIONS
 const fmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: boolean): string => {
     switch (term.type) {
-        case TermType.Missing: {
-            return `<span class="textGroup code-${term.encoding}">[ ]</span>`;
-        }
+        case TermType.Missing: // show missing values as "[  ]"
+            return txtGroupWrapper(term.encoding, '[ ]');
 
-        case TermType.Value: {
-            const formattedTerm = txtWrapper(term.val, TermType.Value);
-            return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
-        }
+        case TermType.Value: // show values as "a"
+            return txtGroupWrapper(term.encoding, txtWrapper(TermType.Value, term.val));
 
-        case TermType.Abstraction: {
-            const formattedVal = txtWrapper(`λ${term.param.val}.`, term.type);
-            const formattedBody = fmtTerm(term.body, isShowNames);
-            const formattedTerm = isShowNames && term.name ? txtWrapper(term.name, TermType.Value) : `${formattedVal}${formattedBody}`;
-            return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
-        }
+        case TermType.Abstraction: // show abstractions with name if applicable, "λa.b" else
+            return isShowNames && term.name
+                ? txtGroupWrapper(term.encoding, txtWrapper(TermType.Value, term.name)) // show name if applicable
+                : txtGroupWrapper(term.encoding, `${txtWrapper(term.type, `λ${term.param.val}.`)}${fmtTerm(term.body, isShowNames)}`);
 
-        case TermType.Application: {
-            const formattedFunc = fmtTerm(term.func, isShowNames);
-            const formattedArg = fmtTerm(term.arg, isShowNames);
-            const formattedTerm = `${OPEN}${formattedFunc} ${formattedArg}${CLOSE}`;
-            return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
-        }
+        case TermType.Application: // show applications as (f x)
+            return txtGroupWrapper(term.encoding, `${OPEN}${fmtTerm(term.func, isShowNames)} ${fmtTerm(term.arg, isShowNames)}${CLOSE}`);
     }
 };
 
 const numTermLayers = (term: IncompleteTerm): number => {
     switch (term.type) {
         case TermType.Missing:
-            return 0;
         case TermType.Value:
             return 0;
         case TermType.Abstraction:
@@ -53,8 +44,8 @@ const insertTerm = <T extends IncompleteTerm>(
     encoding: string,
     child: IncompleteTerm,
 ): IncompleteTerm => {
-    if (term?.encoding === encoding) return child as T;
-    if (!term || !term.type || term.encoding.length > encoding.length) return term as T;
+    if (term.encoding === encoding) return child as T;
+    if (term.encoding.length > encoding.length) return term as T;
 
     switch (term.type) {
         case TermType.Missing:

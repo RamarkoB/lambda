@@ -1,59 +1,43 @@
-import renderTerm, { ABSTRACT_SPACE, getViewBoxSize, renderGroup } from './render.ts';
-import { apply, createValue, IncompleteTerm, lambda, MISSING, TermType } from './types.ts';
-import { numTermLayers } from './utils.ts';
 import { encode } from './encode.ts';
+import { renderTermGroup } from './render.ts';
+import { apply, createValue, IncompleteTerm, lambda, MISSING, TermType } from './types.ts';
 
-const createSidebarNode = (name: string, term: NonNullable<IncompleteTerm>) => {
-    const sidebarNode = document.createElement('div');
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+const sidebarNodeConfig = { labels: false, showNames: false };
 
-    const group = renderGroup(svg, 'group');
-    svg.appendChild(group);
-
-    const termDepth = numTermLayers(term) + ABSTRACT_SPACE;
-    const encodedTerm = encode(term);
-
-    const [termEnd] = renderTerm(
-        group,
-        encodedTerm,
-        0,
-        0,
-        termDepth,
-        {},
-        { labels: false, showNames: false },
-    );
-    svg.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
-
-    const termName = term.type === TermType.Abstraction ? (term.name ?? name) : name;
-    const text = document.createElement('p');
-    text.appendChild(document.createTextNode(termName));
-
-    sidebarNode.classList.add('sidebarNode');
-    sidebarNode.draggable = true;
-    sidebarNode.appendChild(svg);
-    sidebarNode.appendChild(text);
-
-    return sidebarNode;
-};
-
-const terms: [string, NonNullable<IncompleteTerm>][] = [
+const terms: [string, IncompleteTerm][] = [
     ['value', createValue('a')],
     ['abstraction', lambda('a', MISSING)],
     ['apply', apply(MISSING, MISSING)],
 ];
 
+const createSidebarNode = (name: string, term: IncompleteTerm) => {
+    const node = document.createElement('div');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+
+    const encodedTerm = encode(term);
+    renderTermGroup(svg, encodedTerm, sidebarNodeConfig);
+
+    const termName = term.type === TermType.Abstraction ? (term.name ?? name) : name;
+    const text = document.createElement('p');
+    text.appendChild(document.createTextNode(termName));
+
+    node.classList.add('sidebarNode');
+    node.draggable = true;
+    node.append(svg, text);
+
+    node.addEventListener('dragstart', (event) => {
+        if (!event.target) return;
+
+        event.dataTransfer?.clearData();
+        event.dataTransfer?.setData('text/plain', JSON.stringify(term));
+    });
+
+    return node;
+};
+
 export const initializeSidebar = () => {
     const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
 
-    terms.forEach(([name, term]) => {
-        const termNode = createSidebarNode(name, term);
-        termNode.addEventListener('dragstart', (event) => {
-            if (!event.target) return;
-
-            event.dataTransfer?.clearData();
-            event.dataTransfer?.setData('text/plain', JSON.stringify(term));
-        });
-
-        sidebar?.append(termNode);
-    });
+    terms.forEach(([name, term]) => sidebar.append(createSidebarNode(name, term)));
 };

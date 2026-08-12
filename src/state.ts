@@ -1,7 +1,7 @@
 import { encode } from './encode.ts';
 import reduceWithStrategy, { EvalStrategy } from './eval.ts';
 import { defaultConfig, RenderConfig } from './render.ts';
-import { IncompleteTerm, validateTerm } from './types.ts';
+import { IncompleteTerm, MISSING, validateTerm } from './types.ts';
 import { insertTerm } from './utils.ts';
 
 enum AppStatus {
@@ -22,14 +22,14 @@ type AppState = {
 
 type StateUpdateFunction = (newState: AppState) => AppState;
 
-const initializeState = (term: IncompleteTerm): AppState => ({
+const INITIAL_STATE: AppState = {
     config: defaultConfig,
     evalStrategy: EvalStrategy.NormalOrder,
     status: AppStatus.default,
 
-    termHistory: [term],
+    termHistory: [MISSING],
     currTermIndex: 0,
-});
+};
 
 const reduce = (state: AppState): AppState => {
     if (state.status !== AppStatus.default) return state;
@@ -92,15 +92,4 @@ const onEvalStrategyToggle = (state: AppState, evalStrategy: EvalStrategy): AppS
 
 export type { AppState, StateUpdateFunction };
 
-export {
-    initializeState,
-    onBack,
-    onEvalStrategyToggle,
-    onLabelToggle,
-    onNext,
-    onReset,
-    onShowNameToggle,
-    onTermInsert,
-    reduce,
-    totalReduce,
-};
+export { INITIAL_STATE, onBack, onEvalStrategyToggle, onLabelToggle, onNext, onReset, onShowNameToggle, onTermInsert, reduce, totalReduce };

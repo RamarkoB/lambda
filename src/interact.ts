@@ -6,42 +6,37 @@ import {
     onNext,
     onReset,
     onShowNameToggle,
-    StateUpdateFunction,
+    type StateUpdateFunction,
     totalReduce,
 } from './state.ts';
 
 const addOnClick = (id: string, callback: () => void) => {
-    const element = document.getElementById(id);
-    if (!element) return;
-    element.addEventListener('click', callback);
+    document.getElementById(id)?.addEventListener('click', callback);
 };
 
 const addHandleEvalStrategyUpdate = (callback: (newSrategy: EvalStrategy) => void) => {
-    document.getElementById('evalStrategy')?.addEventListener('change', (e) => {
-        const value = e.currentTarget as HTMLSelectElement;
-        callback(value.value as EvalStrategy);
-    });
+    document.getElementById('evalStrategy')?.addEventListener(
+        'change',
+        (event) => callback((event.currentTarget as HTMLSelectElement)?.value as EvalStrategy),
+    );
 };
 
 const addHandleKeydown = (rightCallback: () => void, leftCallback: () => void) => {
     document.addEventListener('keydown', (keyEvent) => {
         switch (keyEvent.key) {
-            case 'ArrowRight': {
+            case 'ArrowRight':
                 keyEvent.preventDefault();
                 rightCallback();
                 break;
-            }
 
-            case 'ArrowLeft': {
+            case 'ArrowLeft':
                 keyEvent.preventDefault();
                 leftCallback();
                 break;
-            }
         }
     });
 };
 
-// `handleUpdate` is a function that consumes a state update function, and binds it to to the global state, so we can pass it to event handlers
 export const initializeInteract = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) => {
     // initial render
     handleUpdate((state) => state);

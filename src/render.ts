@@ -14,7 +14,7 @@ type RenderTermFunction = <T extends IncompleteTerm>(
     verTopLayer: number,
     verBottomLayer: number,
     values: Record<string, number>,
-    config: Partial<RenderConfig>,
+    config: RenderConfig,
 ) => [number, number, number];
 
 const HOR_GAP = 15;
@@ -135,7 +135,6 @@ const renderAbstractionGap = (
 };
 
 const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, verBottomLayer, values, config) => {
-    const { labels, showNames } = { ...defaultConfig, ...config };
     const [termStart, groupStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
     switch (term.type) {
@@ -149,7 +148,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
             );
             if (config.labels) {
                 missingGroup.append(
-                    renderLabel('missing', '[ ]', term.encoding, termStart, 0),
+                    renderLabel('missing', '[  ]', term.encoding, termStart, 0),
                 );
             }
 
@@ -160,7 +159,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
             const valueStop = values[term.val] ?? 1;
 
             group.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, valueStop));
-            if (labels) {
+            if (config.labels) {
                 group.append(renderLabel(term.type, term.val, term.encoding, termStart, 0));
             }
 
@@ -174,9 +173,9 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
             const verLineLayer = verTopLayer + 2;
             const newValues = { ...values, [name]: verLineLayer };
 
-            if (showNames && term.name) {
+            if (config.showNames && term.name) {
                 group.append(renderVerLine(TermType.Value, term.encoding, termStart, verBottomLayer, 1));
-                if (labels) {
+                if (config.labels) {
                     group.append(renderLabel(TermType.Value, term.name, term.encoding, termStart, 0));
                 }
 
@@ -195,7 +194,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                 group.append(
                     renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5),
                 );
-                if (labels) {
+                if (config.labels) {
                     group.append(
                         renderLabel(
                             term.type,
@@ -227,7 +226,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                 config,
             );
 
-            const newHorLayer = renderAbstractionGap(labels, horFuncLayer, term, termStart);
+            const newHorLayer = renderAbstractionGap(config.labels, horFuncLayer, term, termStart);
 
             group.append(renderHorLine(term.type, term.encoding, termStart, newVerBottomLayer, newHorLayer[0]));
 
@@ -248,42 +247,43 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 };
 
 const renderChildTerm: RenderTermFunction = (group, term, ...renderArgs) =>
-    renderTerm(renderGroup(group, term ? `group ${term.type} ${term.encoding}` : ''), term, ...renderArgs);
+    renderTerm(renderGroup(group, `group ${term.type} ${term.encoding}`), term, ...renderArgs);
 
 const getViewBoxSize = (termEnd: number, termDepth: number) =>
     `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`;
 
-const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
+const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, config: RenderConfig) => {
+    const group = renderGroup(parent, 'group');
+    parent.appendChild(group);
+
+    const termDepth = numTermLayers(term) + ABSTRACT_SPACE;
+    const [termEnd] = renderTerm(group, term, 0, 0, termDepth, {}, config);
+    parent.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
+};
+
+const renderState = ({ termHistory, currTermIndex, config }: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
     const view = document.getElementsByTagName('svg').namedItem('lambdaView');
     const indexElement = document.getElementById('index')!;
     const termElement = document.getElementById('lambdaTerm')!;
-
     if (!view) return;
 
     // Clear previous content
-    if (view.firstChild) {
-        view.removeChild(view.firstChild);
+    if (view.firstChild) view.removeChild(view.firstChild);
+
+    if (termHistory.length === 1 && termHistory[0].type === TermType.Missing) {
+        console.log('Show Empty View!');
     }
 
     const group = renderGroup(view, 'group');
     view.appendChild(group);
 
-    const currTerm = encode(state.termHistory[state.currTermIndex]);
-    const termDepth = numTermLayers(currTerm) + ABSTRACT_SPACE;
-
-    const [termEnd] = renderTerm(
-        group,
-        currTerm,
-        0,
-        0,
-        termDepth,
-        {},
-        state.config,
-    );
+    const encodedTerm = encode(termHistory[currTermIndex]);
+    const termDepth = numTermLayers(encodedTerm) + ABSTRACT_SPACE;
+    const [termEnd] = renderTerm(group, encodedTerm, 0, 0, termDepth, {}, config);
     view.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 
-    indexElement.innerText = `${state.currTermIndex + 1} \\ ${state.termHistory.length}`;
-    termElement.innerHTML = fmtTerm(currTerm, state.config.showNames);
+    indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
+    termElement.innerHTML = fmtTerm(encodedTerm, config.showNames);
 
     // Add hover listeners to all relevant elements
     view.querySelectorAll('.line, .label').forEach(addHoverEffect);
@@ -293,6 +293,5 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     view.querySelectorAll('.missing').forEach(addMissingEffect(setState));
 };
 
-export { defaultConfig, getViewBoxSize, renderGroup, renderState };
+export { defaultConfig, getViewBoxSize, renderGroup, renderState, renderTerm, renderTermGroup };
 export type { RenderConfig };
-export default renderTerm;
