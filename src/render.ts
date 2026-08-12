@@ -83,7 +83,7 @@ const renderHorLine = (type: TermType, encoding: string, x: number, y: number, x
     return line;
 };
 
-const renderVerLine = (type: TermType | 'missing', encoding: string, x: number, y: number, y2: number) => {
+const renderVerLine = (type: TermType, encoding: string, x: number, y: number, y2: number) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', (x * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('y1', (y * VER_GAP + VER_OFFSET).toString());
@@ -97,18 +97,11 @@ const renderVerLine = (type: TermType | 'missing', encoding: string, x: number, 
     return line;
 };
 
-const renderLabel = (
-    type: TermType | 'missing' | null,
-    val: string,
-    encoding: string,
-    x: number,
-    y: number,
-    align: Alignment = 'middle',
-) => {
+const renderLabel = (type: TermType, val: string, encoding: string, x: number, y: number, align: Alignment = 'middle') => {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', (x * HOR_GAP + HOR_OFFSET).toString());
     text.setAttribute('y', (y * VER_GAP + VER_OFFSET).toString());
-    text.setAttribute('class', `${type ?? 'main'} label code-${encoding} ${val}`);
+    text.setAttribute('class', `${type} label code-${encoding} ${val}`);
     text.setAttribute('text-anchor', align);
     text.textContent = val;
     return text;
@@ -143,14 +136,8 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
             const missingGroup = renderGroup(group, `group missing term-${term.encoding}`);
 
-            missingGroup.append(
-                renderVerLine('missing', term.encoding, termStart, verBottomLayer, 1),
-            );
-            if (config.labels) {
-                missingGroup.append(
-                    renderLabel('missing', '[  ]', term.encoding, termStart, 0),
-                );
-            }
+            missingGroup.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, 1));
+            if (config.labels) missingGroup.append(renderLabel(term.type, '[  ]', term.encoding, termStart, 0));
 
             return [termStart + 1, verTopLayer, verBottomLayer];
         }
@@ -159,9 +146,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
             const valueStop = values[term.val] ?? 1;
 
             group.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, valueStop));
-            if (config.labels) {
-                group.append(renderLabel(term.type, term.val, term.encoding, termStart, 0));
-            }
+            if (config.labels) group.append(renderLabel(term.type, term.val, term.encoding, termStart, 0));
 
             return [termStart + 1, verTopLayer, verBottomLayer];
         }
@@ -175,13 +160,11 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
             if (config.showNames && term.name) {
                 group.append(renderVerLine(TermType.Value, term.encoding, termStart, verBottomLayer, 1));
-                if (config.labels) {
-                    group.append(renderLabel(TermType.Value, term.name, term.encoding, termStart, 0));
-                }
+                if (config.labels) group.append(renderLabel(TermType.Value, term.name, term.encoding, termStart, 0));
 
                 return [termStart + 1, verTopLayer, verBottomLayer];
             } else {
-                const [horBodyLayer, verTopBodyLayer, verBotBodyLayer] = renderChildTerm(
+                const [horBodyLayer, verTopBodyLayer, verBottomBodyLayer] = renderChildTerm(
                     group,
                     term.body,
                     horLayers,
@@ -191,23 +174,12 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                     config,
                 );
 
-                group.append(
-                    renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5),
-                );
+                group.append(renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5));
                 if (config.labels) {
-                    group.append(
-                        renderLabel(
-                            term.type,
-                            `λ${name}`,
-                            term.encoding,
-                            groupStart - 1.5,
-                            verLineLayer + 0.25,
-                            'right',
-                        ),
-                    );
+                    group.append(renderLabel(term.type, `λ${name}`, term.encoding, groupStart - 1.5, verLineLayer + 0.25, 'right'));
                 }
 
-                return [horBodyLayer, verTopBodyLayer + 1, verBotBodyLayer];
+                return [horBodyLayer, verTopBodyLayer + 1, verBottomBodyLayer];
             }
         }
 
@@ -262,10 +234,10 @@ const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, 
 };
 
 const renderState = ({ termHistory, currTermIndex, config }: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
-    const view = document.getElementsByTagName('svg').namedItem('lambdaView');
-    const indexElement = document.getElementById('index')!;
-    const termElement = document.getElementById('lambdaTerm')!;
-    if (!view) return;
+    const view = document.getElementById('lambdaView');
+    const termElement = document.getElementById('lambdaTerm');
+    const indexElement = document.getElementById('index');
+    if (!view || !indexElement || !termElement) return;
 
     // Clear previous content
     if (view.firstChild) view.removeChild(view.firstChild);
@@ -274,23 +246,18 @@ const renderState = ({ termHistory, currTermIndex, config }: AppState, setState:
         console.log('Show Empty View!');
     }
 
-    const group = renderGroup(view, 'group');
-    view.appendChild(group);
-
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const encodedTerm = encode(termHistory[currTermIndex]);
-    const termDepth = numTermLayers(encodedTerm) + ABSTRACT_SPACE;
-    const [termEnd] = renderTerm(group, encodedTerm, 0, 0, termDepth, {}, config);
-    view.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
+    renderTermGroup(svg, encodedTerm, config);
 
-    indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
+    view.appendChild(svg);
     termElement.innerHTML = fmtTerm(encodedTerm, config.showNames);
+    indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
 
-    // Add hover listeners to all relevant elements
-    view.querySelectorAll('.line, .label').forEach(addHoverEffect);
+    // Add hover and drag listeners to all relevant elements
+    svg.querySelectorAll('.missing').forEach(addMissingEffect(setState));
+    svg.querySelectorAll('.line, .label').forEach(addHoverEffect);
     termElement.querySelectorAll('.textGroup').forEach(addHoverEffect);
-
-    // add drag and drop listeners to all missing elements
-    view.querySelectorAll('.missing').forEach(addMissingEffect(setState));
 };
 
 export { defaultConfig, getViewBoxSize, renderGroup, renderState, renderTerm, renderTermGroup };

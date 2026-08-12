@@ -89,71 +89,95 @@ body {
     transition: all 0.3s ease;
 }
 
-#mainExpand:has(#resize-checkbox:checked) {
+#mainExpand:has(#resizeCheckbox:checked) {
     height: calc(100vh - 2rem);
     width: 100%;
 }
 
-#mainExpand > svg {
-    background: white;
-    display: block;
-    width: 100%;
-    height: calc(100% - 8px);
-    border: black solid 4px;
-    border-radius: 15px;
-    box-sizing: border-box;
-    transition: all 0.3s ease;
+#resizeCheckbox:checked + #resizeLabel {
+    background-color: #e0e0e0;
+    border-color: #a0a0a0;
 }
 
-#resize {
+#resizeLabel {
     position: absolute;
     top: 1rem;
     right: 1rem;
     display: inline-block;
     padding: 0.5rem;
     border-radius: 15px;
-    border: 1px solid #ccc;
+    border: 2px solid black;
     cursor: pointer;
     user-select: none;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-#resize-checkbox:checked + #resize {
-    background-color: #e0e0e0;
-    border-color: #a0a0a0;
+#lambdaView {
+    background: white;
+    display: block;
+    width: 100%;
+    height: calc(100% - 8px);
+    border: 4px solid black;
+    border-radius: 15px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+#lambdaView > svg {
+    height: 100%;
+    width: 100%;
 }
 
 #sidebar {
     width: calc(20% - 0.5rem);
     overflow: scroll;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-#sidebar div {
+#varNameWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#varNameWrapper > p {
+    text-align: center;
+    margin: 0;
+}
+
+#varName {
+    width: 1rem;
+    border: 3px solid black;
+    border-radius: 5px;
+
+    font-size: medium;
+    font-family: 'Jost', sans-serif;
+    text-align: center;
+}
+
+#baseTerms {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebarNode {
     width: 100%;
     height: calc(25% - 8px);
-    margin-bottom: 0.5rem;
-    border: solid 4px black;
+    border: 4px solid black;
     background: white;
     border-radius: 15px;
     box-sizing: border-box;
 
+    cursor: grab;
+
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-#sidebar svg {
-    flex: 1;
-    width: 100%;
-}
-
-#sidebar p {
-    margin: 0;
-    margin-bottom: 0.5rem;
-}
-
-.sidebarNode {
-    cursor: grab;
 }
 
 .sidebarNode * {
@@ -161,40 +185,42 @@ body {
     user-select: none;
 }
 
+.sidebarNode svg {
+    flex: 1;
+    width: 100%;
+}
+
+.sidebarNode p {
+    margin: 0;
+    margin-bottom: 0.5rem;
+}
+
 .line {
+    stroke: var(--color);
     stroke-width: 5;
     stroke-linecap: round;
-    transition: opacity 0.2s ease;
 }
 
 .label {
+    fill: var(--color);
     font-family: 'Jost', sans-serif;
     font-size: 10px;
-    transition: opacity 0.2s ease;
 }
 
-.value.label {
-    fill: blue;
+.value {
+    --color: blue;
 }
 
-.abstraction.label {
-    fill: green;
+.abstraction {
+    --color: green;
 }
 
-.value.line {
-    stroke: blue;
+.application {
+    --color: red;
 }
 
-.abstraction.line {
-    stroke: green;
-}
-
-.application.line {
-    stroke: red;
-}
-
-.missing.line {
-    stroke: black;
+.missing {
+    --color: black;
 }
 
 /* Default state - everything visible */
@@ -223,28 +249,17 @@ body {
 }
 
 #lambdaTerm:has(.selected) .text {
+    color: var(--color);
     opacity: 0.25;
-}
-
-#lambdaTerm:has(.selected) .text.value {
-    color: blue;
-}
-
-#lambdaTerm:has(.selected) .text.abstraction {
-    color: green;
-}
-
-#lambdaTerm:has(.selected) .text.application {
-    color: red;
-}
-
-.textGroup.selected .text {
-    opacity: 1 !important;
 }
 
 #index {
     min-width: 4rem;
     text-align: center;
+}
+
+.textGroup.selected .text {
+    opacity: 1 !important;
 }
 
 .buttonList {

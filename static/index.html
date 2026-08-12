@@ -16,12 +16,18 @@
         <div id="main">
             <div id="mainExpand">
                 <div>
-                    <input type="checkbox" id="resize-checkbox" style="display: none" />
-                    <label for="resize-checkbox" id="resize">Expand</label>
+                    <input type="checkbox" id="resizeCheckbox" style="display: none" />
+                    <label for="resizeCheckbox" id="resizeLabel">Expand</label>
                 </div>
-                <svg id="lambdaView" viewBox="0 0 0 0"></svg>
+                <div id="lambdaView" viewBox="0 0 0 0"></div>
             </div>
-            <div id="sidebar"></div>
+            <div id="sidebar">
+                <div id="varNameWrapper">
+                    <label for="varName">Variable Name:</label>
+                    <input id="varName" maxlength="1" placeholder="a" />
+                </div>
+                <div id="baseTerms"></div>
+            </div>
         </div>
 
         <p id="lambdaTerm"></p>
