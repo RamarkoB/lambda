@@ -90,7 +90,7 @@ body {
 }
 
 #mainExpand:has(#resizeCheckbox:checked) {
-    height: calc(100vh - 2rem);
+    height: calc(100vh - 2rem - 8px);
     width: 100%;
 }
 
@@ -116,7 +116,7 @@ body {
     background: white;
     display: block;
     width: 100%;
-    height: calc(100% - 8px);
+    height: 100%;
     border: 4px solid black;
     border-radius: 15px;
     box-sizing: border-box;
@@ -159,10 +159,9 @@ body {
     text-align: center;
 }
 
-#baseTerms {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+#seperator {
+    border: 2px solid #bbb;
+    border-radius: 10px;
 }
 
 .sidebarNode {

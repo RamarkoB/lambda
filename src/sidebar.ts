@@ -1,6 +1,7 @@
 import { encode } from './encode.ts';
 import { renderTermGroup } from './render.ts';
 import { apply, createValue, IncompleteTerm, lambda, MISSING, TermType } from './types.ts';
+import * as terms from './terms.ts';
 
 const sidebarNodeConfig = { labels: false, showNames: false };
 
@@ -11,11 +12,11 @@ const baseTerms: [string, (val: string) => IncompleteTerm][] = [
 ];
 
 const createSidebarNode = (name: string, termFn: (varName: string) => IncompleteTerm) => {
-    const varNameInput = document.getElementsByTagName('input').namedItem('varName')
+    const varNameInput = document.getElementsByTagName('input').namedItem('varName');
     const node = document.createElement('div');
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
-    const encodedTerm = encode(termFn(" "));
+    const encodedTerm = encode(termFn(' '));
     renderTermGroup(svg, encodedTerm, sidebarNodeConfig);
 
     const nameNode = document.createElement('p');
@@ -38,10 +39,15 @@ const createSidebarNode = (name: string, termFn: (varName: string) => Incomplete
 };
 
 export const initializeSidebar = () => {
-    const baseTermsDiv = document.getElementById('baseTerms');
     const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
     
-    if (!baseTermsDiv || !sidebar) return;
+    const seperator = document.createElement("div");
+    seperator.id = "seperator"
 
-    baseTerms.forEach(([name, term]) => baseTermsDiv.append(createSidebarNode(name, term)));
+    baseTerms.forEach(([name, term]) => sidebar.append(createSidebarNode(name, term)));
+    sidebar.append(seperator);
+    Object.entries(terms)
+        .filter(([_, term]) => typeof term === 'object' && term !== null)
+        .forEach(([name, term]) => sidebar.append(createSidebarNode(name, () => term)));
 };
