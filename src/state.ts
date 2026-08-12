@@ -1,6 +1,8 @@
+import { encode } from './encode.ts';
 import reduceWithStrategy, { EvalStrategy } from './eval.ts';
 import { defaultConfig, RenderConfig } from './render.ts';
 import { IncompleteTerm, validateTerm } from './types.ts';
+import { insertTerm } from './utils.ts';
 
 enum AppStatus {
     default,
@@ -17,6 +19,8 @@ type AppState = {
 
     status: AppStatus;
 };
+
+type StateUpdateFunction = (newState: AppState) => AppState;
 
 const initializeState = (term: IncompleteTerm): AppState => ({
     config: defaultConfig,
@@ -62,6 +66,11 @@ const totalReduce = (state: AppState): AppState => {
         : totalReduce(newState);
 };
 
+const onTermInsert = (encoding: string, term: IncompleteTerm) => (state: AppState): AppState => ({
+    ...state,
+    termHistory: [insertTerm(encode(state.termHistory[0]), encoding, term)],
+});
+
 const onNext = (state: AppState): AppState =>
     state.currTermIndex + 1 === state.termHistory.length ? reduce(state) : { ...state, currTermIndex: state.currTermIndex + 1 };
 
@@ -81,6 +90,17 @@ const onShowNameToggle = ({ config, ...state }: AppState): AppState => ({
 
 const onEvalStrategyToggle = (state: AppState, evalStrategy: EvalStrategy): AppState => ({ ...state, evalStrategy });
 
-export type { AppState };
+export type { AppState, StateUpdateFunction };
 
-export { initializeState, onBack, onEvalStrategyToggle, onLabelToggle, onNext, onReset, onShowNameToggle, reduce, totalReduce };
+export {
+    initializeState,
+    onBack,
+    onEvalStrategyToggle,
+    onLabelToggle,
+    onNext,
+    onReset,
+    onShowNameToggle,
+    onTermInsert,
+    reduce,
+    totalReduce,
+};

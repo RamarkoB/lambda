@@ -3,12 +3,9 @@ import { apply, createValue, IncompleteTerm, lambda, TermType } from './types.ts
 import { numTermLayers } from './utils.ts';
 import { encode } from './encode.ts';
 
-const createSidebarNode = (name: string, term: IncompleteTerm) => {
+const createSidebarNode = (name: string, term: NonNullable<IncompleteTerm>) => {
     const sidebarNode = document.createElement('div');
-    const svg = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'svg',
-    );
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
     const group = renderGroup(svg, 'group');
     svg.appendChild(group);
@@ -39,7 +36,7 @@ const createSidebarNode = (name: string, term: IncompleteTerm) => {
     return sidebarNode;
 };
 
-const terms: [string, IncompleteTerm][] = [
+const terms: [string, NonNullable<IncompleteTerm>][] = [
     ['value', createValue('a')],
     ['abstraction', lambda('a', undefined)],
     ['apply', apply(undefined, undefined)],

@@ -22,7 +22,7 @@ type IncompleteAbstraction<T extends string> = {
 
 type IncompleteApplication = { type: TermType.Application; name?: string; func?: IncompleteTerm; arg?: IncompleteTerm };
 
-type IncompleteTerm = Term | IncompleteAbstraction<string> | IncompleteApplication;
+type IncompleteTerm = Term | IncompleteAbstraction<string> | IncompleteApplication | undefined;
 
 // Type alias for term children (can be Term, string, or undefined)
 type TermChild = Term | IncompleteTerm | string | undefined;
@@ -78,6 +78,8 @@ const namedApply = <TFunc extends TermChild, TArg extends TermChild>(
 
 // VALIDATION AND ENCODING
 const validateTerm = (term: IncompleteTerm): term is Term => {
+    if (!term) return false;
+
     switch (term.type) {
         case TermType.Value:
             return true;

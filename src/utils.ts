@@ -9,6 +9,8 @@ const CLOSE = txtWrapper(')', TermType.Application);
 
 // LOG FUNCTIONS
 const fmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: boolean): string => {
+    if (!term) return '';
+
     switch (term.type) {
         case TermType.Value: {
             const formattedTerm = txtWrapper(term.val, TermType.Value);
@@ -46,9 +48,38 @@ const numTermLayers = (term: IncompleteTerm | undefined): number => {
     }
 };
 
-const insertTerm = (term: IncompleteTerm, encoding: string, child: IncompleteTerm) => {
-    console.log(term);
-    // TODO
+const insertTerm = <T extends IncompleteTerm>(
+    term: EncodedTerm<T>,
+    encoding: string,
+    child: IncompleteTerm,
+): IncompleteTerm => {
+    if (term?.encoding === encoding) return child as T;
+    if (!term || !term.type || term.encoding.length > encoding.length) return term as T;
+
+    const currEncodingChar = encoding.at(term.encoding.length);
+
+    console.log(term, encoding, currEncodingChar, term.encoding === encoding);
+
+    switch (term.type) {
+        case TermType.Value: // impossible term type
+            return term;
+
+        case TermType.Abstraction: {
+            return {
+                ...term,
+                param: insertTerm(term.param, encoding, child),
+                body: insertTerm(term.body, encoding, child),
+            } as T;
+        }
+
+        case TermType.Application: {
+            return {
+                ...term,
+                func: insertTerm(term.func, encoding, child),
+                arg: insertTerm(term.arg, encoding, child),
+            } as T;
+        }
+    }
 };
 
 export { fmtTerm, insertTerm, numTermLayers };

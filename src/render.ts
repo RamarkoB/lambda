@@ -1,5 +1,5 @@
 import { encode, type EncodedTerm } from './encode.ts';
-import { AppState } from './state.ts';
+import { AppState, onTermInsert, StateUpdateFunction } from './state.ts';
 import { Application, IncompleteApplication, IncompleteTerm, TermType } from './types.ts';
 import { fmtTerm, numTermLayers } from './utils.ts';
 
@@ -50,10 +50,11 @@ const addHoverEffect = (element: Element) => {
     }
 };
 
-const addMissingEffect = (element: Element) => {
+const addMissingEffect = (setState: (stateUpdateFn: StateUpdateFunction) => void) => (element: Element) => {
     if (!(element instanceof SVGElement)) return;
 
-    const embedding = element.getAttribute('class');
+    const encoding = element.getAttribute('class')?.split(' ').find((cls) => cls.startsWith('term-'))?.split('term-').at(1);
+    if (!encoding) return;
 
     element.addEventListener('dragover', (event) => {
         event.preventDefault();
@@ -62,7 +63,10 @@ const addMissingEffect = (element: Element) => {
     element.addEventListener('drop', (event) => {
         event.preventDefault();
         const data = event.dataTransfer?.getData('text');
-        console.log(embedding, data);
+        if (!data) return;
+
+        const term = JSON.parse(data) as IncompleteTerm;
+        setState(onTermInsert(encoding, term));
     });
 };
 
@@ -131,6 +135,8 @@ const renderAbstractionGap = (
 };
 
 const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, verBottomLayer, values, config) => {
+    if (!term) return [0, 0, 0];
+
     const { labels, showNames } = { ...defaultConfig, ...config };
     const [termStart, groupStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
@@ -209,7 +215,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 };
 
 const renderChildTerm: RenderTermFunction = (group, term, ...renderArgs) =>
-    renderTerm(renderGroup(group, `group ${term.type} ${term.encoding}`), term, ...renderArgs);
+    renderTerm(renderGroup(group, term ? `group ${term.type} ${term.encoding}` : ''), term, ...renderArgs);
 
 const renderMissingTerm = (
     group: SVGGElement,
@@ -228,25 +234,18 @@ const renderMissingTerm = (
         missingGroup.append(renderLabel('missing', '[ ]', encoding, termStart, 0));
     }
 
-    missingGroup.addEventListener('dragover', (event) => {
-        event.preventDefault();
-    });
-
-    missingGroup.addEventListener('drop', (event) => {
-        event.preventDefault();
-        const data = event.dataTransfer?.getData('text');
-        console.log(data);
-    });
-
     return [termStart + 2, verTopLayer, verBottomLayer];
 };
 
 const getViewBoxSize = (termEnd: number, termDepth: number) =>
     `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`;
 
-const renderState = (view: SVGElement, state: AppState) => {
+const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
+    const view = document.getElementsByTagName('svg').namedItem('lambdaView');
     const indexElement = document.getElementById('index')!;
     const termElement = document.getElementById('lambdaTerm')!;
+
+    if (!view) return;
 
     // Clear previous content
     if (view.firstChild) {
@@ -278,7 +277,7 @@ const renderState = (view: SVGElement, state: AppState) => {
     termElement.querySelectorAll('.textGroup').forEach(addHoverEffect);
 
     // add drag and drop listeners to all missing elements
-    view.querySelectorAll('.missing').forEach(addMissingEffect);
+    view.querySelectorAll('.missing').forEach(addMissingEffect(setState));
 };
 
 export { defaultConfig, getViewBoxSize, renderGroup, renderState };
