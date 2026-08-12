@@ -1,10 +1,10 @@
 import { EncodedTerm } from './encode.ts';
 import { IncompleteTerm, TermType } from './types.ts';
 
-const rawfmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T> | undefined): string => {
-    if (!term) return '[ ]';
-
+const rawfmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>): string => {
     switch (term.type) {
+        case TermType.Missing:
+            return '[ ]';
         case TermType.Value:
             return term.val;
         case TermType.Abstraction:

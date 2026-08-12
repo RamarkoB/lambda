@@ -135,12 +135,27 @@ const renderAbstractionGap = (
 };
 
 const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, verBottomLayer, values, config) => {
-    if (!term) return [0, 0, 0];
-
     const { labels, showNames } = { ...defaultConfig, ...config };
     const [termStart, groupStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
     switch (term.type) {
+        case TermType.Missing: {
+            const [termStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
+
+            const missingGroup = renderGroup(group, `group missing term-${term.encoding}`);
+
+            missingGroup.append(
+                renderVerLine('missing', term.encoding, termStart, verBottomLayer, 1),
+            );
+            if (config.labels) {
+                missingGroup.append(
+                    renderLabel('missing', '[ ]', term.encoding, termStart, 0),
+                );
+            }
+
+            return [termStart + 1, verTopLayer, verBottomLayer];
+        }
+
         case TermType.Value: {
             const valueStop = values[term.val] ?? 1;
 
@@ -167,9 +182,15 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
                 return [termStart + 1, verTopLayer, verBottomLayer];
             } else {
-                const [horBodyLayer, verTopBodyLayer, verBotBodyLayer] = term.body
-                    ? renderChildTerm(group, term.body, horLayers, newVerTopLayer, verBottomLayer, newValues, config)
-                    : renderMissingTerm(group, `${term.encoding}1`, horLayers, newVerTopLayer, verBottomLayer, config);
+                const [horBodyLayer, verTopBodyLayer, verBotBodyLayer] = renderChildTerm(
+                    group,
+                    term.body,
+                    horLayers,
+                    newVerTopLayer,
+                    verBottomLayer,
+                    newValues,
+                    config,
+                );
 
                 group.append(
                     renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5),
@@ -196,17 +217,29 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
             group.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, newVerBottomLayer));
 
-            const [horFuncLayer, , verBotFuncLayer] = term.func
-                ? renderChildTerm(group, term.func, horLayers, verTopLayer, newVerBottomLayer, values, config)
-                : renderMissingTerm(group, `${term.encoding}0`, horLayers, verTopLayer, newVerBottomLayer, config);
+            const [horFuncLayer, , verBotFuncLayer] = renderChildTerm(
+                group,
+                term.func,
+                horLayers,
+                verTopLayer,
+                newVerBottomLayer,
+                values,
+                config,
+            );
 
             const newHorLayer = renderAbstractionGap(labels, horFuncLayer, term, termStart);
 
             group.append(renderHorLine(term.type, term.encoding, termStart, newVerBottomLayer, newHorLayer[0]));
 
-            const [horArgLayer, , verBotArgLayer] = term.arg
-                ? renderChildTerm(group, term.arg, newHorLayer, verTopLayer, newVerBottomLayer, values, config)
-                : renderMissingTerm(group, `${term.encoding}1`, newHorLayer, verTopLayer, newVerBottomLayer, config);
+            const [horArgLayer, , verBotArgLayer] = renderChildTerm(
+                group,
+                term.arg,
+                newHorLayer,
+                verTopLayer,
+                newVerBottomLayer,
+                values,
+                config,
+            );
 
             const newBottomLayer = Math.min(verBotFuncLayer, verBotArgLayer) - 1;
             return [horArgLayer, verTopLayer, newBottomLayer];
@@ -216,26 +249,6 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
 const renderChildTerm: RenderTermFunction = (group, term, ...renderArgs) =>
     renderTerm(renderGroup(group, term ? `group ${term.type} ${term.encoding}` : ''), term, ...renderArgs);
-
-const renderMissingTerm = (
-    group: SVGGElement,
-    encoding: string,
-    horLayers: number | [number, number],
-    verTopLayer: number,
-    verBottomLayer: number,
-    config: Partial<RenderConfig>,
-): [number, number, number] => {
-    const [termStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
-
-    const missingGroup = renderGroup(group, `group missing term-${encoding}`);
-
-    missingGroup.append(renderVerLine('missing', encoding, termStart, verBottomLayer, 1));
-    if (config.labels) {
-        missingGroup.append(renderLabel('missing', '[ ]', encoding, termStart, 0));
-    }
-
-    return [termStart + 2, verTopLayer, verBottomLayer];
-};
 
 const getViewBoxSize = (termEnd: number, termDepth: number) =>
     `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`;

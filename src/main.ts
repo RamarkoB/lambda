@@ -3,8 +3,10 @@ import { renderState } from './render.ts';
 import { initializeSidebar } from './sidebar.ts';
 import { initializeState, StateUpdateFunction } from './state.ts';
 import * as terms from './terms.ts';
-import { apply } from './types.ts';
-const term = apply(terms.isZero, apply(terms.pred, apply(terms.succ, undefined)));
+import { apply, MISSING } from './types.ts';
+
+const term = apply( terms.isZero, apply(terms.pred, apply(terms.succ, terms.five)));
+// const term = apply(terms.isZero, apply(terms.pred, apply(terms.succ, MISSING)));
 // const term = undefined;
 
 let state = initializeState(term);

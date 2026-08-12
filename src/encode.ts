@@ -10,9 +10,8 @@ export type EncodedTerm<T extends IncompleteTerm> = T extends object ?
     : T;
 
 export const encode = <T extends IncompleteTerm>(term: T, encoding: string = '0'): EncodedTerm<T> => {
-    if (term === undefined) return undefined as EncodedTerm<T>;
-
     switch (term.type) {
+        case TermType.Missing:
         case TermType.Value: {
             return { ...term, encoding } as EncodedTerm<T>;
         }

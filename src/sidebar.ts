@@ -1,5 +1,5 @@
 import renderTerm, { ABSTRACT_SPACE, getViewBoxSize, renderGroup } from './render.ts';
-import { apply, createValue, IncompleteTerm, lambda, TermType } from './types.ts';
+import { apply, createValue, IncompleteTerm, lambda, MISSING, TermType } from './types.ts';
 import { numTermLayers } from './utils.ts';
 import { encode } from './encode.ts';
 
@@ -38,8 +38,8 @@ const createSidebarNode = (name: string, term: NonNullable<IncompleteTerm>) => {
 
 const terms: [string, NonNullable<IncompleteTerm>][] = [
     ['value', createValue('a')],
-    ['abstraction', lambda('a', undefined)],
-    ['apply', apply(undefined, undefined)],
+    ['abstraction', lambda('a', MISSING)],
+    ['apply', apply(MISSING, MISSING)],
 ];
 
 export const initializeSidebar = () => {

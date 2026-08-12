@@ -9,9 +9,11 @@ const CLOSE = txtWrapper(')', TermType.Application);
 
 // LOG FUNCTIONS
 const fmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: boolean): string => {
-    if (!term) return '';
-
     switch (term.type) {
+        case TermType.Missing: {
+            return `<span class="textGroup code-${term.encoding}">[ ]</span>`;
+        }
+
         case TermType.Value: {
             const formattedTerm = txtWrapper(term.val, TermType.Value);
             return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
@@ -19,26 +21,24 @@ const fmtTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: bo
 
         case TermType.Abstraction: {
             const formattedVal = txtWrapper(`λ${term.param.val}.`, term.type);
-            const formattedBody = term.body ? fmtTerm(term.body, isShowNames) : fmtMissingTerm(`${term.encoding}1`);
+            const formattedBody = fmtTerm(term.body, isShowNames);
             const formattedTerm = isShowNames && term.name ? txtWrapper(term.name, TermType.Value) : `${formattedVal}${formattedBody}`;
             return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
         }
 
         case TermType.Application: {
-            const formattedFunc = term.func ? fmtTerm(term.func, isShowNames) : fmtMissingTerm(`${term.encoding}0`);
-            const formattedArg = term.arg ? fmtTerm(term.arg, isShowNames) : fmtMissingTerm(`${term.encoding}1`);
+            const formattedFunc = fmtTerm(term.func, isShowNames);
+            const formattedArg = fmtTerm(term.arg, isShowNames);
             const formattedTerm = `${OPEN}${formattedFunc} ${formattedArg}${CLOSE}`;
             return `<span class="textGroup code-${term.encoding}">${formattedTerm}</span>`;
         }
     }
 };
 
-const fmtMissingTerm = (encoding: string) => `<span class="textGroup code-${encoding}">[ ]</span>`;
-
-const numTermLayers = (term: IncompleteTerm | undefined): number => {
-    if (!term) return 0;
-
+const numTermLayers = (term: IncompleteTerm): number => {
     switch (term.type) {
+        case TermType.Missing:
+            return 0;
         case TermType.Value:
             return 0;
         case TermType.Abstraction:
@@ -56,12 +56,9 @@ const insertTerm = <T extends IncompleteTerm>(
     if (term?.encoding === encoding) return child as T;
     if (!term || !term.type || term.encoding.length > encoding.length) return term as T;
 
-    const currEncodingChar = encoding.at(term.encoding.length);
-
-    console.log(term, encoding, currEncodingChar, term.encoding === encoding);
-
     switch (term.type) {
-        case TermType.Value: // impossible term type
+        case TermType.Missing:
+        case TermType.Value:
             return term;
 
         case TermType.Abstraction: {

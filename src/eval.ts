@@ -94,13 +94,12 @@ const betaReduce = (term: Term): Term => {
 };
 
 const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): Term => {
-    const freeVars = getFreeVariables(newVal);
-
     switch (term.type) {
         case TermType.Value:
             return term.val === oldVal.val ? newVal : term;
 
-        case TermType.Abstraction:
+        case TermType.Abstraction: {
+            const freeVars = getFreeVariables(newVal);
             if (freeVars.has(term.param.val)) {
                 const freshVar = `${term.param.val}'`;
                 return {
@@ -109,7 +108,9 @@ const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): 
                     body: replace(alphaConvert(term.body, term.param.val, freshVar), oldVal, newVal),
                 };
             }
+
             return { ...term, body: replace(term.body, oldVal, newVal) };
+        }
 
         case TermType.Application:
             return {
