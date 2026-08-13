@@ -10,16 +10,13 @@ import {
     totalReduce,
 } from './state.ts';
 
-const addOnClick = (id: string, callback: () => void) => {
-    document.getElementById(id)?.addEventListener('click', callback);
-};
+const addOnClick = (id: string, callback: () => void) => document.getElementById(id)?.addEventListener('click', callback);
 
-const addHandleEvalStrategyUpdate = (callback: (newSrategy: EvalStrategy) => void) => {
+const addHandleEvalStrategyUpdate = (callback: (newSrategy: EvalStrategy) => void) =>
     document.getElementById('evalStrategy')?.addEventListener(
         'change',
         (event) => callback((event.currentTarget as HTMLSelectElement)?.value as EvalStrategy),
     );
-};
 
 const addHandleKeydown = (rightCallback: () => void, leftCallback: () => void) => {
     document.addEventListener('keydown', (keyEvent) => {

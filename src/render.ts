@@ -1,5 +1,6 @@
+import { addHoverEffect, addMissingEffect } from './effects.ts';
 import { encode, type EncodedTerm } from './encode.ts';
-import { AppState, onTermInsert, StateUpdateFunction } from './state.ts';
+import { AppState, StateUpdateFunction } from './state.ts';
 import { Application, IncompleteApplication, IncompleteTerm, TermType } from './types.ts';
 import { fmtTerm, numTermLayers } from './utils.ts';
 
@@ -23,52 +24,9 @@ const VER_GAP = 10;
 const HOR_OFFSET = 2 * HOR_GAP;
 const VER_OFFSET = 2 * VER_GAP;
 
-export const ABSTRACT_SPACE = 2;
+const ABSTRACT_GAP = 2;
 
 const defaultConfig: RenderConfig = { labels: true, showNames: true };
-
-const addHoverEffect = (element: Element) => {
-    const className = element
-        .getAttribute('class')
-        ?.split(' ')
-        .find((cls) => cls.startsWith('code-'));
-
-    if (className) {
-        const linkedElements = document.querySelectorAll(
-            `#lambdaTerm .${className}, #lambdaView .${className}`,
-        );
-
-        element.addEventListener('mouseover', (e) => {
-            e.stopPropagation();
-            linkedElements.forEach((el) => el.classList.add('selected'));
-        });
-
-        element.addEventListener('mouseout', (e) => {
-            e.stopPropagation();
-            linkedElements.forEach((el) => el.classList.remove('selected'));
-        });
-    }
-};
-
-const addMissingEffect = (setState: (stateUpdateFn: StateUpdateFunction) => void) => (element: Element) => {
-    if (!(element instanceof SVGElement)) return;
-
-    const encoding = element.getAttribute('class')?.split(' ').find((cls) => cls.startsWith('term-'))?.split('term-').at(1);
-    if (!encoding) return;
-
-    element.addEventListener('dragover', (event) => {
-        event.preventDefault();
-    });
-
-    element.addEventListener('drop', (event) => {
-        event.preventDefault();
-        const data = event.dataTransfer?.getData('text');
-        if (!data) return;
-
-        const term = JSON.parse(data) as IncompleteTerm;
-        setState(onTermInsert(encoding, term));
-    });
-};
 
 const renderHorLine = (type: TermType, encoding: string, x: number, y: number, x2 = x) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -228,7 +186,7 @@ const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, 
     const group = renderGroup(parent, 'group');
     parent.appendChild(group);
 
-    const termDepth = numTermLayers(term) + ABSTRACT_SPACE;
+    const termDepth = numTermLayers(term) + ABSTRACT_GAP;
     const [termEnd] = renderTerm(group, term, 0, 0, termDepth, {}, config);
     parent.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 };

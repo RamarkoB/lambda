@@ -7,34 +7,47 @@ export enum EvalStrategy {
     CallByValue = 'Call by Value',
 }
 
-const getBoundVariables = (term: Term): Set<string> => {
+enum VariableType {
+    Bound = 'Bound',
+    Free = 'Free',
+}
+
+// get all bound or free variables (bound variables are tied to a parent abstraction while free variables are not)
+const getVariables = (term: Term, varType: VariableType): Set<string> => {
     switch (term.type) {
         case TermType.Value:
-            return new Set();
+            return varType === VariableType.Bound ? new Set() : new Set([term.val]);
         case TermType.Abstraction: {
-            const boundInBody = getBoundVariables(term.body);
-            boundInBody.add(term.param.val);
-            return boundInBody;
+            const variablesInBody = getVariables(term.body, varType);
+            varType === VariableType.Bound ? variablesInBody.add(term.param.val) : variablesInBody.delete(term.param.val);
+            return variablesInBody;
         }
         case TermType.Application:
-            return new Set([...getBoundVariables(term.func), ...getBoundVariables(term.arg)]);
+            return new Set([...getVariables(term.func, varType), ...getVariables(term.arg, varType)]);
     }
 };
 
-const getFreeVariables = (term: Term): Set<string> => {
+// replace function used in both α-conversion and β-reduction
+const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): Term => {
     switch (term.type) {
         case TermType.Value:
-            return new Set([term.val]);
+            return term.val === oldVal.val ? newVal : term;
         case TermType.Abstraction: {
-            const freeInBody = getFreeVariables(term.body);
-            freeInBody.delete(term.param.val);
-            return freeInBody;
+            const freeVars = getVariables(newVal, VariableType.Free);
+            if (!freeVars.has(term.param.val)) return { ...term, body: replace(term.body, oldVal, newVal) };
+
+            const freshVar = `${term.param.val}'`;
+            const alphaConverted = replace(alphaConvert(term.body, term.param.val, freshVar), oldVal, newVal);
+            return { ...term, param: createValue(freshVar), body: alphaConverted };
         }
         case TermType.Application:
-            return new Set([...getFreeVariables(term.func), ...getFreeVariables(term.arg)]);
+            return { ...term, func: replace(term.func, oldVal, newVal), arg: replace(term.arg, oldVal, newVal) };
     }
 };
 
+const removeName = (term: Term): Term => term.type === TermType.Value ? term : { ...term, name: undefined };
+
+// α-conversion function used to rename all uses of a variable
 const alphaConvert = (term: Term, oldName: string, newName: string): Term => {
     switch (term.type) {
         case TermType.Value:
@@ -42,82 +55,40 @@ const alphaConvert = (term: Term, oldName: string, newName: string): Term => {
         case TermType.Abstraction:
             return term.param.val === oldName ? term : { ...term, body: alphaConvert(term.body, oldName, newName) };
         case TermType.Application:
-            return {
-                type: TermType.Application,
-                func: alphaConvert(term.func, oldName, newName),
-                arg: alphaConvert(term.arg, oldName, newName),
-            };
+            return { ...term, func: alphaConvert(term.func, oldName, newName), arg: alphaConvert(term.arg, oldName, newName) };
     }
 };
 
+// β-reduction function used to reduce a term
 const betaReduce = (term: Term): Term => {
     switch (term.type) {
         case TermType.Value:
             return term;
         case TermType.Abstraction: {
             const reducedBody = betaReduce(term.body);
-            return reducedBody === term.body ? term : { ...term, body: reducedBody };
+            return reducedBody === term.body ? term : removeName({ ...term, body: reducedBody });
         }
         case TermType.Application: {
             const reducedFunc = betaReduce(term.func);
             const reducedArg = betaReduce(term.arg);
 
+            // if either part reduce, return reduced term
+            if (reducedFunc !== term.func || reducedArg !== term.arg) return removeName({ ...term, func: reducedFunc, arg: reducedArg });
+
+            // if term function is not an abstraction, this term cannot be reduced further
+            if (reducedFunc.type !== TermType.Abstraction) return term;
+
             // If neither part reduced, try to reduce the application
-            if (reducedFunc === term.func && reducedArg === term.arg) {
-                if (reducedFunc.type === TermType.Abstraction) {
-                    const freeVarsInArg = getFreeVariables(reducedArg);
-                    const boundVarsInBody = getBoundVariables(reducedFunc.body);
-                    const needsAlpha = [...freeVarsInArg].some((v) => boundVarsInBody.has(v));
-                    const freshVar = `${reducedFunc.param.val}'`;
+            const freeVarsInArg = getVariables(reducedArg, VariableType.Free);
+            const boundVarsInBody = getVariables(reducedFunc.body, VariableType.Bound);
+            const needsAlpha = [...freeVarsInArg].some((v) => boundVarsInBody.has(v));
+            const freshVar = `${reducedFunc.param.val}'`;
+            const alphaConverted = needsAlpha
+                ? replace(alphaConvert(reducedFunc.body, reducedFunc.param.val, freshVar), createValue(freshVar), reducedArg)
+                : replace(reducedFunc.body, reducedFunc.param, reducedArg);
 
-                    return betaReduce(
-                        needsAlpha
-                            ? replace(
-                                alphaConvert(reducedFunc.body, reducedFunc.param.val, freshVar),
-                                createValue(freshVar),
-                                reducedArg,
-                            )
-                            : replace(reducedFunc.body, reducedFunc.param, reducedArg),
-                    );
-                }
-                return term;
-            }
-
-            // Otherwise, continue reducing the parts
-            return {
-                type: TermType.Application,
-                func: reducedFunc,
-                arg: reducedArg,
-            };
+            return removeName(betaReduce(alphaConverted));
         }
-    }
-};
-
-const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): Term => {
-    switch (term.type) {
-        case TermType.Value:
-            return term.val === oldVal.val ? newVal : term;
-
-        case TermType.Abstraction: {
-            const freeVars = getFreeVariables(newVal);
-            if (freeVars.has(term.param.val)) {
-                const freshVar = `${term.param.val}'`;
-                return {
-                    type: TermType.Abstraction,
-                    param: createValue(freshVar),
-                    body: replace(alphaConvert(term.body, term.param.val, freshVar), oldVal, newVal),
-                };
-            }
-
-            return { ...term, body: replace(term.body, oldVal, newVal) };
-        }
-
-        case TermType.Application:
-            return {
-                type: TermType.Application,
-                func: replace(term.func, oldVal, newVal),
-                arg: replace(term.arg, oldVal, newVal),
-            };
     }
 };
 

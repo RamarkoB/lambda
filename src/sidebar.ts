@@ -1,11 +1,11 @@
 import { encode } from './encode.ts';
 import { renderTermGroup } from './render.ts';
 import { apply, createValue, IncompleteTerm, lambda, MISSING, TermType } from './types.ts';
-import * as terms from './terms.ts';
+import terms from './terms.ts';
 
 const sidebarNodeConfig = { labels: false, showNames: false };
 
-const baseTerms: [string, (val: string) => IncompleteTerm][] = [
+const basicTerms: [string, (varName: string) => IncompleteTerm][] = [
     ['value', (val) => createValue(val)],
     ['abstraction', (val) => lambda(val, MISSING)],
     ['apply', () => apply(MISSING, MISSING)],
@@ -41,13 +41,13 @@ const createSidebarNode = (name: string, termFn: (varName: string) => Incomplete
 export const initializeSidebar = () => {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
-    
-    const seperator = document.createElement("div");
-    seperator.id = "seperator"
 
-    baseTerms.forEach(([name, term]) => sidebar.append(createSidebarNode(name, term)));
-    sidebar.append(seperator);
-    Object.entries(terms)
-        .filter(([_, term]) => typeof term === 'object' && term !== null)
-        .forEach(([name, term]) => sidebar.append(createSidebarNode(name, () => term)));
+    const seperator = document.createElement('div');
+    seperator.id = 'seperator';
+
+    sidebar.append(
+        ...basicTerms.map(([name, term]) => createSidebarNode(name, term)),
+        seperator,
+        ...terms.map(([name, term]) => createSidebarNode(name, term)),
+    );
 };

@@ -91,5 +91,4 @@ const onShowNameToggle = ({ config, ...state }: AppState): AppState => ({
 const onEvalStrategyToggle = (state: AppState, evalStrategy: EvalStrategy): AppState => ({ ...state, evalStrategy });
 
 export type { AppState, StateUpdateFunction };
-
 export { INITIAL_STATE, onBack, onEvalStrategyToggle, onLabelToggle, onNext, onReset, onShowNameToggle, onTermInsert, reduce, totalReduce };

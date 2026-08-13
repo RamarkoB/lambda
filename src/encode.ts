@@ -1,8 +1,7 @@
 import { IncompleteTerm, TermType } from './types.ts';
 
-export type EncodedTerm<T extends IncompleteTerm> = T extends object ?
-        & { encoding: string }
-        & { [K in keyof T]: T[K] extends IncompleteTerm ? EncodedTerm<T[K]> : T[K] }
+export type EncodedTerm<T extends IncompleteTerm> = T extends object
+    ? { encoding: string } & { [K in keyof T]: T[K] extends IncompleteTerm ? EncodedTerm<T[K]> : T[K] }
     : T;
 
 export const encode = <T extends IncompleteTerm>(term: T, encoding: string = '0'): EncodedTerm<T> => {
