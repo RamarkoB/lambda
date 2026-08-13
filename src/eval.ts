@@ -45,6 +45,7 @@ const replace = <T extends string>(term: Term, oldVal: Value<T>, newVal: Term): 
     }
 };
 
+// strip name from reduced terms
 const removeName = (term: Term): Term => term.type === TermType.Value ? term : { ...term, name: undefined };
 
 // α-conversion function used to rename all uses of a variable

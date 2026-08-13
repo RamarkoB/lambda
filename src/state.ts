@@ -1,8 +1,7 @@
-import { encode } from './encode.ts';
+import { encode, EncodedTerm } from './encode.ts';
 import reduceWithStrategy, { EvalStrategy } from './eval.ts';
-import { defaultConfig, RenderConfig } from './render.ts';
-import { IncompleteTerm, MISSING, validateTerm } from './types.ts';
-import { insertTerm } from './utils.ts';
+import { RenderConfig } from './render.ts';
+import { type IncompleteTerm, MISSING, TermType, validateTerm } from './types.ts';
 
 enum AppStatus {
     default,
@@ -23,7 +22,7 @@ type AppState = {
 type StateUpdateFunction = (newState: AppState) => AppState;
 
 const INITIAL_STATE: AppState = {
-    config: defaultConfig,
+    config: { labels: true, showNames: true },
     evalStrategy: EvalStrategy.NormalOrder,
     status: AppStatus.default,
 
@@ -45,7 +44,7 @@ const reduce = (state: AppState): AppState => {
         return currTerm === newTerm
             ? { ...state, status: AppStatus.normalized }
             : { ...state, currTermIndex: state.currTermIndex + 1, termHistory: [...state.termHistory, newTerm] };
-    } catch (_e) {
+    } catch (_) {
         console.log('Maxxed out baby!');
         return { ...state, status: AppStatus.error };
     }
@@ -66,6 +65,25 @@ const totalReduce = (state: AppState): AppState => {
         : totalReduce(newState);
 };
 
+const insertTerm = <T extends IncompleteTerm>(
+    term: EncodedTerm<T>,
+    encoding: string,
+    child: IncompleteTerm,
+): IncompleteTerm => {
+    if (term.encoding === encoding) return child as T;
+    if (term.encoding.length > encoding.length) return term as T;
+
+    switch (term.type) {
+        case TermType.Missing:
+        case TermType.Value:
+            return term;
+        case TermType.Abstraction:
+            return { ...term, param: insertTerm(term.param, encoding, child), body: insertTerm(term.body, encoding, child) } as T;
+        case TermType.Application:
+            return { ...term, func: insertTerm(term.func, encoding, child), arg: insertTerm(term.arg, encoding, child) } as T;
+    }
+};
+
 const onTermInsert = (encoding: string, term: IncompleteTerm) => (state: AppState): AppState => ({
     ...state,
     termHistory: [insertTerm(encode(state.termHistory[0]), encoding, term)],
@@ -78,15 +96,9 @@ const onBack = (state: AppState): AppState => ({ ...state, currTermIndex: Math.m
 
 const onReset = (state: AppState): AppState => ({ ...state, currTermIndex: 0 });
 
-const onLabelToggle = ({ config, ...state }: AppState): AppState => ({
-    ...state,
-    config: { ...config, labels: !config.labels },
-});
+const onLabelToggle = ({ config, ...state }: AppState): AppState => ({ ...state, config: { ...config, labels: !config.labels } });
 
-const onShowNameToggle = ({ config, ...state }: AppState): AppState => ({
-    ...state,
-    config: { ...config, showNames: !config.showNames },
-});
+const onShowNameToggle = ({ config, ...state }: AppState): AppState => ({ ...state, config: { ...config, showNames: !config.showNames } });
 
 const onEvalStrategyToggle = (state: AppState, evalStrategy: EvalStrategy): AppState => ({ ...state, evalStrategy });
 

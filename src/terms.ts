@@ -10,7 +10,7 @@ import {
     namedLambda,
 } from './types.ts';
 
-// COMBINATORS
+// combinators
 const lambdaI = namedLambda('I Combinator', 'x', 'x'); // I combinator (identity function)
 const lambdaU = namedLambda('U Combinator', 'x', apply('x', 'x'));
 const lambdaK = namedLambda('K Combinator', 'x', lambda('y', 'x')); // K combinator (constant function)
@@ -29,7 +29,7 @@ const lambdaZ = namedLambda(
 ); // Z combinator
 const omega = namedApply('Ω Combinator', lambdaU, lambdaU);
 
-// LOGIC ENCODINGS
+// logical
 const lambdaTrue = namedLambda('true', 'x', lambda('y', 'x'));
 const lambdaFalse = namedLambda('false', 'x', lambda('y', 'y'));
 const lambdaIf = namedLambda('if', 'x', lambda('y', lambda('z', apply(apply('x', 'y'), 'z')))); // Logical IF
@@ -37,7 +37,7 @@ const and = namedLambda('and', 'p', lambda('q', apply(apply('p', 'q'), 'p'))); /
 const or = namedLambda('or', 'p', lambda('q', apply(apply('p', 'p'), 'q'))); // Logical OR
 const not = namedLambda('not', 'p', apply(apply('p', lambdaFalse), lambdaTrue)); // Logical NOT
 
-// NUMBER ENCODINGS
+// numbers
 const numberEncoder = (layers: number): Application => layers === 1 ? apply('f', 'x') : apply('f', numberEncoder(layers - 1));
 const zero = namedLambda('zero', 'f', lambda('x', 'x'));
 const one = namedLambda('one', 'f', lambda('x', numberEncoder(1)));
@@ -103,10 +103,10 @@ const terms: [string, (varName: string) => IncompleteTerm][] = [
     // logical
     makeSidebarTerm(lambdaTrue),
     makeSidebarTerm(lambdaFalse),
-    makeSidebarTerm(lambdaIf, 3),
-    makeSidebarTerm(and, 2),
+    makeSidebarTerm(not, 1),
     makeSidebarTerm(or, 2),
-    makeSidebarTerm(not, 2),
+    makeSidebarTerm(and, 2),
+    makeSidebarTerm(lambdaIf, 3),
 
     // numbers
     makeSidebarTerm(zero),

@@ -1,8 +1,7 @@
-import { addHoverEffect, addMissingEffect } from './effects.ts';
+import { addHoverEffect, addMissingEffect } from './handlers.ts';
 import { encode, type EncodedTerm } from './encode.ts';
-import { AppState, StateUpdateFunction } from './state.ts';
-import { Application, IncompleteApplication, IncompleteTerm, TermType } from './types.ts';
-import { fmtTerm, numTermLayers } from './utils.ts';
+import type { AppState, StateUpdateFunction } from './state.ts';
+import { type Application, type IncompleteApplication, type IncompleteTerm, TermType } from './types.ts';
 
 type Alignment = 'left' | 'middle' | 'right';
 
@@ -26,35 +25,81 @@ const VER_OFFSET = 2 * VER_GAP;
 
 const ABSTRACT_GAP = 2;
 
-const defaultConfig: RenderConfig = { labels: true, showNames: true };
+// term format helpers
+const txtWrapper = (type: TermType, text: string) => `<span class="text ${type}">${text}</span>`;
+const txtGroupWrapper = (encoding: string, term: string) => `<span class="textGroup code-${encoding}">${term}</span>`;
 
-const renderHorLine = (type: TermType, encoding: string, x: number, y: number, x2 = x) => {
+// punctuation constants
+const OPEN = txtWrapper(TermType.Application, '(');
+const CLOSE = txtWrapper(TermType.Application, ')');
+
+// format term for display
+const formatTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: boolean): string => {
+    switch (term.type) {
+        case TermType.Missing: // show missing values as "[  ]"
+            return txtGroupWrapper(term.encoding, '[ ]');
+
+        case TermType.Value: // show values as "a"
+            return txtGroupWrapper(term.encoding, txtWrapper(TermType.Value, term.val));
+
+        case TermType.Abstraction: // show abstractions with name if applicable, "λa.b" else
+            return isShowNames && term.name
+                ? txtGroupWrapper(term.encoding, txtWrapper(TermType.Value, term.name)) // show name if applicable
+                : txtGroupWrapper(term.encoding, `${txtWrapper(term.type, `λ${term.param.val}.`)}${formatTerm(term.body, isShowNames)}`);
+
+        case TermType.Application: // show applications as (f x)
+            return txtGroupWrapper(
+                term.encoding,
+                `${OPEN}${formatTerm(term.func, isShowNames)} ${formatTerm(term.arg, isShowNames)}${CLOSE}`,
+            );
+    }
+};
+
+const numTermLayers = (term: IncompleteTerm): number => {
+    switch (term.type) {
+        case TermType.Missing:
+        case TermType.Value:
+            return 0;
+        case TermType.Abstraction:
+            return 1 + numTermLayers(term.body);
+        case TermType.Application:
+            return 1 + Math.max(numTermLayers(term.func), numTermLayers(term.arg));
+    }
+};
+
+// helper function to calculate size of svg view box
+const getViewBoxSize = (termEnd: number, termDepth: number) =>
+    `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`;
+
+// renders a single horizontal line for a term between x1 and x2 at height y
+const renderHorLine = (type: TermType, encoding: string, x1: number, x2: number, y: number) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', (x * HOR_GAP + HOR_OFFSET).toString());
-    line.setAttribute('y1', (y * VER_GAP + VER_OFFSET).toString());
+    line.setAttribute('x1', (x1 * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('x2', (x2 * HOR_GAP + HOR_OFFSET).toString());
+    line.setAttribute('y1', (y * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('y2', (y * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('class', `${type} hover line code-${encoding}`);
     line.setAttribute('data-layer', `${y}`);
-    line.setAttribute('data-horizontalStart', `${x}`);
+    line.setAttribute('data-horizontalStart', `${x1}`);
     line.setAttribute('data-horizontalEnd', `${x2}`);
     return line;
 };
 
-const renderVerLine = (type: TermType, encoding: string, x: number, y: number, y2: number) => {
+// renders a single vertical line for a term between y1 and y2 at offset x
+const renderVerLine = (type: TermType, encoding: string, x: number, y1: number, y2: number) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', (x * HOR_GAP + HOR_OFFSET).toString());
-    line.setAttribute('y1', (y * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('x2', (x * HOR_GAP + HOR_OFFSET).toString());
+    line.setAttribute('y1', (y1 * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('y2', (y2 * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('class', `${type} hover line code-${encoding}`);
     line.setAttribute('data-horizontalOffset', `${x}`);
     line.setAttribute('data-topLayer', `${y2}`);
-    line.setAttribute('data-bottomLayer', `${y}`);
-
+    line.setAttribute('data-bottomLayer', `${y1}`);
     return line;
 };
 
+// renders a label for a term at a specific point and alignment
 const renderLabel = (type: TermType, val: string, encoding: string, x: number, y: number, align: Alignment = 'middle') => {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', (x * HOR_GAP + HOR_OFFSET).toString());
@@ -65,6 +110,7 @@ const renderLabel = (type: TermType, val: string, encoding: string, x: number, y
     return text;
 };
 
+// creates an SVG group to serve as a wrapper around a term
 const renderGroup = (parent: SVGElement, className: string): SVGGElement => {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', className);
@@ -72,6 +118,7 @@ const renderGroup = (parent: SVGElement, className: string): SVGGElement => {
     return group;
 };
 
+// add a gap between terms when rendering labels on terms
 const renderAbstractionGap = (
     labels: boolean,
     horFuncLayer: number,
@@ -85,6 +132,7 @@ const renderAbstractionGap = (
     return [newTermStart, newGroupStart];
 };
 
+// main recursive term rendering function
 const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, verBottomLayer, values, config) => {
     const [termStart, groupStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
@@ -93,7 +141,6 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
             const [termStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
             const missingGroup = renderGroup(group, `group missing term-${term.encoding}`);
-
             missingGroup.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, 1));
             if (config.labels) missingGroup.append(renderLabel(term.type, '[  ]', term.encoding, termStart, 0));
 
@@ -132,7 +179,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                     config,
                 );
 
-                group.append(renderHorLine(term.type, term.encoding, termStart - 0.5, verLineLayer, horBodyLayer - 0.5));
+                group.append(renderHorLine(term.type, term.encoding, termStart - 0.5, horBodyLayer - 0.5, verLineLayer));
                 if (config.labels) {
                     group.append(renderLabel(term.type, `λ${name}`, term.encoding, groupStart - 1.5, verLineLayer + 0.25, 'right'));
                 }
@@ -143,7 +190,6 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
         case TermType.Application: {
             const newVerBottomLayer = verBottomLayer - 1;
-
             group.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, newVerBottomLayer));
 
             const [horFuncLayer, , verBotFuncLayer] = renderChildTerm(
@@ -157,8 +203,7 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
             );
 
             const newHorLayer = renderAbstractionGap(config.labels, horFuncLayer, term, termStart);
-
-            group.append(renderHorLine(term.type, term.encoding, termStart, newVerBottomLayer, newHorLayer[0]));
+            group.append(renderHorLine(term.type, term.encoding, termStart, newHorLayer[0], newVerBottomLayer));
 
             const [horArgLayer, , verBotArgLayer] = renderChildTerm(
                 group,
@@ -176,12 +221,11 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
     }
 };
 
+// if a term is a child of another term, render it inside of a group
 const renderChildTerm: RenderTermFunction = (group, term, ...renderArgs) =>
     renderTerm(renderGroup(group, `group ${term.type} ${term.encoding}`), term, ...renderArgs);
 
-const getViewBoxSize = (termEnd: number, termDepth: number) =>
-    `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`;
-
+// render a term and attach it so an svg element
 const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, config: RenderConfig) => {
     const group = renderGroup(parent, 'group');
     parent.appendChild(group);
@@ -191,6 +235,7 @@ const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, 
     parent.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 };
 
+// main function to render a term inside of the `lambdaView` element
 const renderState = ({ termHistory, currTermIndex, config }: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
     const view = document.getElementById('lambdaView');
     const termElement = document.getElementById('lambdaTerm');
@@ -209,7 +254,7 @@ const renderState = ({ termHistory, currTermIndex, config }: AppState, setState:
     renderTermGroup(svg, encodedTerm, config);
 
     view.appendChild(svg);
-    termElement.innerHTML = fmtTerm(encodedTerm, config.showNames);
+    termElement.innerHTML = formatTerm(encodedTerm, config.showNames);
     indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
 
     // Add hover and drag listeners to all relevant elements
@@ -218,5 +263,6 @@ const renderState = ({ termHistory, currTermIndex, config }: AppState, setState:
     termElement.querySelectorAll('.textGroup').forEach(addHoverEffect);
 };
 
-export { defaultConfig, getViewBoxSize, renderGroup, renderState, renderTerm, renderTermGroup };
 export type { RenderConfig };
+export { renderTermGroup };
+export default renderState;
