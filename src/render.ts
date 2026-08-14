@@ -241,7 +241,9 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     const termElement = document.getElementById('lambdaTerm');
     const menuElement = document.getElementById('menu');
     const indexElement = document.getElementById('index');
-    if (!view || !termElement || !menuElement || !indexElement) return;
+    const undoElement = document.getElementById('undo');
+    const redoElement = document.getElementById('redo');
+    if (!view || !termElement || !menuElement || !indexElement || !undoElement || !redoElement) return;
 
     // Clear previous content
     if (view.firstChild) view.removeChild(view.firstChild);
@@ -261,6 +263,8 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
 
     // disable or enable the menu element buttons, depending on app status
     state.status === AppStatus.Edit ? menuElement?.classList.add('disabled') : menuElement?.classList.remove('disabled');
+    state.editIndex === 0 ? undoElement.classList.add('disabled') : undoElement.classList.remove('disabled');
+    state.editIndex === state.editHistory.length - 1 ? redoElement.classList.add('disabled') : redoElement.classList.remove('disabled');
 
     // Add hover and drag listeners to all relevant elements
     svg.querySelectorAll('.missing').forEach(addMissingEffect(setState));

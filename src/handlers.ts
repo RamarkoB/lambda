@@ -64,6 +64,13 @@ const addHandleKeydown = (undo: () => void, redo: () => void, back: () => void, 
                 keyEvent.preventDefault();
                 next();
                 break;
+
+            case 'Escape': {
+                const resizeCheckbox = document.getElementsByTagName('input').namedItem('resizeCheckbox');
+                if (!resizeCheckbox) return;
+                resizeCheckbox.checked = false;
+                break;
+            }
         }
     });
 };
