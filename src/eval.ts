@@ -88,7 +88,7 @@ const betaReduce = (term: Term): Term => {
                 ? replace(alphaConvert(reducedFunc.body, reducedFunc.param.val, freshVar), createValue(freshVar), reducedArg)
                 : replace(reducedFunc.body, reducedFunc.param, reducedArg);
 
-            return removeName(betaReduce(alphaConverted));
+            return betaReduce(alphaConverted);
         }
     }
 };
