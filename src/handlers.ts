@@ -46,17 +46,23 @@ const addHandleEvalStrategyUpdate = (callback: (newSrategy: EvalStrategy) => voi
         (event) => callback((event.currentTarget as HTMLSelectElement)?.value as EvalStrategy),
     );
 
-const addHandleKeydown = (rightCallback: () => void, leftCallback: () => void) => {
+const addHandleKeydown = (undo: () => void, redo: () => void, back: () => void, next: () => void) => {
     document.addEventListener('keydown', (keyEvent) => {
         switch (keyEvent.key) {
+            case 'z':
+                keyEvent.preventDefault();
+                if (!keyEvent.ctrlKey && !keyEvent.metaKey) break;
+                keyEvent.shiftKey ? redo() : undo();
+                break;
+
             case 'ArrowRight':
                 keyEvent.preventDefault();
-                rightCallback();
+                back();
                 break;
 
             case 'ArrowLeft':
                 keyEvent.preventDefault();
-                leftCallback();
+                next();
                 break;
         }
     });

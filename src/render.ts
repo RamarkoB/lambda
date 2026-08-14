@@ -1,7 +1,7 @@
 import { addHoverEffect, addMissingEffect } from './handlers.ts';
 import { encode, type EncodedTerm } from './encode.ts';
-import type { AppState, StateUpdateFunction } from './state.ts';
-import { type Application, type IncompleteApplication, type IncompleteTerm, TermType } from './types.ts';
+import { type AppState, AppStatus, type StateUpdateFunction } from './state.ts';
+import { type Application, type IncompleteApplication, type IncompleteTerm, MISSING, TermType } from './types.ts';
 
 type Alignment = 'left' | 'middle' | 'right';
 
@@ -13,8 +13,8 @@ type RenderTermFunction = <T extends IncompleteTerm>(
     horLayers: number | [number, number],
     verTopLayer: number,
     verBottomLayer: number,
-    values: Record<string, number>,
     config: RenderConfig,
+    values: Record<string, number>,
 ) => [number, number, number];
 
 const HOR_GAP = 15;
@@ -55,15 +55,15 @@ const formatTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames:
     }
 };
 
-const numTermLayers = (term: IncompleteTerm): number => {
+const getNumTermLayers = (term: IncompleteTerm): number => {
     switch (term.type) {
         case TermType.Missing:
         case TermType.Value:
             return 0;
         case TermType.Abstraction:
-            return 1 + numTermLayers(term.body);
+            return 1 + getNumTermLayers(term.body);
         case TermType.Application:
-            return 1 + Math.max(numTermLayers(term.func), numTermLayers(term.arg));
+            return 1 + Math.max(getNumTermLayers(term.func), getNumTermLayers(term.arg));
     }
 };
 
@@ -133,7 +133,7 @@ const renderAbstractionGap = (
 };
 
 // main recursive term rendering function
-const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, verBottomLayer, values, config) => {
+const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, verBottomLayer, config, values) => {
     const [termStart, groupStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
 
     switch (term.type) {
@@ -175,8 +175,8 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                     horLayers,
                     newVerTopLayer,
                     verBottomLayer,
-                    newValues,
                     config,
+                    newValues,
                 );
 
                 group.append(renderHorLine(term.type, term.encoding, termStart - 0.5, horBodyLayer - 0.5, verLineLayer));
@@ -198,8 +198,8 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                 horLayers,
                 verTopLayer,
                 newVerBottomLayer,
-                values,
                 config,
+                values,
             );
 
             const newHorLayer = renderAbstractionGap(config.labels, horFuncLayer, term, termStart);
@@ -211,8 +211,8 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
                 newHorLayer,
                 verTopLayer,
                 newVerBottomLayer,
-                values,
                 config,
+                values,
             );
 
             const newBottomLayer = Math.min(verBotFuncLayer, verBotArgLayer) - 1;
@@ -230,32 +230,37 @@ const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, 
     const group = renderGroup(parent, 'group');
     parent.appendChild(group);
 
-    const termDepth = numTermLayers(term) + ABSTRACT_GAP;
-    const [termEnd] = renderTerm(group, term, 0, 0, termDepth, {}, config);
+    const termDepth = getNumTermLayers(term) + ABSTRACT_GAP;
+    const [termEnd] = renderTerm(group, term, 0, 0, termDepth, config, {});
     parent.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 };
 
 // main function to render a term inside of the `lambdaView` element
-const renderState = ({ termHistory, currTermIndex, config }: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
+const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
     const view = document.getElementById('lambdaView');
     const termElement = document.getElementById('lambdaTerm');
+    const menuElement = document.getElementById('menu');
     const indexElement = document.getElementById('index');
-    if (!view || !indexElement || !termElement) return;
+    if (!view || !termElement || !menuElement || !indexElement) return;
 
     // Clear previous content
     if (view.firstChild) view.removeChild(view.firstChild);
 
-    if (termHistory.length === 1 && termHistory[0].type === TermType.Missing) {
+    if (state.status === AppStatus.Edit && state.editHistory.length === 1 && state.editHistory[0] === MISSING) {
         console.log('Show Empty View!');
     }
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const encodedTerm = encode(termHistory[currTermIndex]);
-    renderTermGroup(svg, encodedTerm, config);
+    const currTerm = state.status === AppStatus.Edit ? state.editHistory[state.editIndex] : state.termReductions[state.reductionIndex];
+    const encodedTerm = encode(currTerm);
+    renderTermGroup(svg, encodedTerm, state.config);
 
     view.appendChild(svg);
-    termElement.innerHTML = formatTerm(encodedTerm, config.showNames);
-    indexElement.innerText = `${currTermIndex + 1} \\ ${termHistory.length}`;
+    termElement.innerHTML = formatTerm(encodedTerm, state.config.showNames);
+    indexElement.innerText = state.status === AppStatus.Edit ? '1 / ??' : `${state.reductionIndex + 1} / ${state.termReductions.length}`;
+
+    // disable or enable the menu element buttons, depending on app status
+    state.status === AppStatus.Edit ? menuElement?.classList.add('disabled') : menuElement?.classList.remove('disabled');
 
     // Add hover and drag listeners to all relevant elements
     svg.querySelectorAll('.missing').forEach(addMissingEffect(setState));

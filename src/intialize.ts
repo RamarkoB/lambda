@@ -4,10 +4,12 @@ import { renderTermGroup } from './render.ts';
 import {
     onBack,
     onEvalStrategyToggle,
+    onFirst,
     onLabelToggle,
     onNext,
-    onReset,
+    onRedo,
     onShowNameToggle,
+    onUndo,
     type StateUpdateFunction,
     totalReduce,
 } from './state.ts';
@@ -48,10 +50,12 @@ const createSidebarNode = ([termName, termFn]: [string, (varName: string) => Inc
     return node;
 };
 
+// initalize the main view and sidebar
 const initialize = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) => {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
+    // constructor
     const seperator = document.createElement('div');
     seperator.id = 'seperator';
 
@@ -62,7 +66,10 @@ const initialize = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) 
     handleUpdate((state) => state);
 
     // add button handling
-    addOnClick('reset', () => handleUpdate(onReset));
+    addOnClick('undo', () => handleUpdate(onUndo));
+    addOnClick('redo', () => handleUpdate(onRedo));
+
+    addOnClick('reset', () => handleUpdate(onFirst));
     addOnClick('back', () => handleUpdate(onBack));
     addOnClick('next', () => handleUpdate(onNext));
     addOnClick('totalReduce', () => handleUpdate(totalReduce));
@@ -72,6 +79,8 @@ const initialize = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) 
 
     addHandleEvalStrategyUpdate((evalStrategy) => handleUpdate((state) => onEvalStrategyToggle(state, evalStrategy)));
     addHandleKeydown(
+        () => handleUpdate(onUndo),
+        () => handleUpdate(onRedo),
         () => handleUpdate(onNext),
         () => handleUpdate(onBack),
     );

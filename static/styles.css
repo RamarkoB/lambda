@@ -94,22 +94,39 @@ body {
     width: 100%;
 }
 
-#resizeCheckbox:checked + #resizeLabel {
-    background-color: #e0e0e0;
-    border-color: #a0a0a0;
-}
-
-#resizeLabel {
+#mainExpandMenu {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    display: inline-block;
-    padding: 0.5rem;
-    border-radius: 15px;
+
+    display: flex;
+    gap: 8px;
+}
+
+#mainExpandMenu > * {
+    min-width: 2.5rem;
     border: 2px solid black;
+    border-radius: 15px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#resizeLabel {
+    padding: 0.5rem;
+
+    display: inline-block;
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+#mainExpandMenu > *:hover,
+:not(.disabled) > button:hover,
+div > #resizeCheckbox:checked {
+    background-color: #e0e0e0;
+    border-color: #a0a0a0;
 }
 
 #lambdaView {
@@ -268,4 +285,18 @@ body {
     gap: 2rem;
 
     padding-bottom: 1rem;
+}
+
+#menu.disabled button {
+    opacity: 50%;
+    cursor: not-allowed;
+}
+
+#acknowledgements {
+    width: 100%;
+    text-align: center;
+}
+
+#acknowledgements a {
+    color: black;
 }

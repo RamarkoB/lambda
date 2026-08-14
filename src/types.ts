@@ -57,18 +57,18 @@ const namedApply = <TFunc extends TermChild, TArg extends TermChild>(
 ) => ({ name, ...apply(func, arg) } as IsIncompleteApplication<TFunc, TArg> & { name: string });
 
 // VALIDATION AND ENCODING
-const validateTerm = (term: IncompleteTerm): term is Term => {
+const isCompleteTerm = (term: IncompleteTerm): term is Term => {
     switch (term.type) {
         case TermType.Missing:
             return false;
         case TermType.Value:
             return true;
         case TermType.Abstraction:
-            return !!term.body && !!term.param && validateTerm(term.body) && validateTerm(term.param);
+            return isCompleteTerm(term.body) && isCompleteTerm(term.param);
         case TermType.Application:
-            return !!term.arg && !!term.func && validateTerm(term.arg) && validateTerm(term.func);
+            return isCompleteTerm(term.arg) && isCompleteTerm(term.func);
     }
 };
 
 export type { Application, IncompleteAbstraction, IncompleteApplication, IncompleteTerm, Term, Value };
-export { apply, createValue, lambda, MISSING, namedApply, namedLambda, TermType, validateTerm };
+export { apply, createValue, isCompleteTerm, lambda, MISSING, namedApply, namedLambda, TermType };
