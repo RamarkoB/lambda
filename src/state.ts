@@ -74,8 +74,8 @@ const insertTerm = <T extends IncompleteTerm>(
     encoding: string,
     child: IncompleteTerm,
 ): IncompleteTerm => {
-    if (term.encoding === encoding) return child as T;
-    if (term.encoding.length > encoding.length) return term as T;
+    if (term.encoding === encoding) return child;
+    if (term.encoding.length > encoding.length) return term;
 
     switch (term.type) {
         case TermType.Missing:
