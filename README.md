@@ -1,4 +1,4 @@
-### Lambda Calculator
+# Lambda Calculator
 
 <img width="1470" height="920" alt="Screenshot of the Lambda Calculator" src="https://github.com/user-attachments/assets/d18294d3-1f67-4b33-bdf1-42b1e0c3fa79" />
 
