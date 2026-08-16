@@ -32,5 +32,3 @@ The Codebase is written entirely in TypeScript and Compiled to minified JS and s
 - [Cornell CS 6110 Lecture 4](https://www.cs.cornell.edu/courses/cs6110/2018sp/lectures/lec04.pdf)
 - [Stanford CS242 Lecture 4](https://web.stanford.edu/class/cs242/materials/lectures/lecture04.pdf)
 - [Columbia COMS W3261 Lecture 23](https://www.cs.columbia.edu/~aho/cs3261/Lectures/L23-Lambda_Calculus_I.html)
-
-© 2026 Ramarko Bhattacharya. All rights reserved.
