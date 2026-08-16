@@ -6,12 +6,12 @@ import {
     onEvalStrategyToggle,
     onFirst,
     onLabelToggle,
+    onLast,
     onNext,
     onRedo,
     onShowNameToggle,
     onUndo,
     type StateUpdateFunction,
-    totalReduce,
 } from './state.ts';
 import terms from './terms.ts';
 import { apply, createValue, IncompleteTerm, lambda, MISSING } from './types.ts';
@@ -69,21 +69,23 @@ const initialize = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) 
     addOnClick('undo', () => handleUpdate(onUndo));
     addOnClick('redo', () => handleUpdate(onRedo));
 
-    addOnClick('reset', () => handleUpdate(onFirst));
+    addOnClick('first', () => handleUpdate(onFirst));
     addOnClick('back', () => handleUpdate(onBack));
     addOnClick('next', () => handleUpdate(onNext));
-    addOnClick('totalReduce', () => handleUpdate(totalReduce));
+    addOnClick('last', () => handleUpdate(onLast));
 
     addOnClick('showNames', () => handleUpdate(onShowNameToggle));
     addOnClick('toggleLabels', () => handleUpdate(onLabelToggle));
+    addHandleEvalStrategyUpdate((evalStrategy) => handleUpdate(onEvalStrategyToggle(evalStrategy)));
 
-    addHandleEvalStrategyUpdate((evalStrategy) => handleUpdate((state) => onEvalStrategyToggle(state, evalStrategy)));
     addHandleKeydown(
         () => handleUpdate(onUndo),
         () => handleUpdate(onRedo),
         () => handleUpdate(onNext),
         () => handleUpdate(onBack),
     );
+
+    document.getElementById('varName')?.addEventListener('keydown', (keyEvent) => keyEvent.stopPropagation());
 };
 
 export default initialize;

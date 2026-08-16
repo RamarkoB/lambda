@@ -126,4 +126,7 @@ const betaReduce = (term: Term, strategy: EvalStrategy): Term => {
     }
 };
 
-export default betaReduce;
+const evaluate = (term: Term, strategy: EvalStrategy): Term[] =>
+    isRedux(term) ? [term, ...evaluate(betaReduce(term, strategy), strategy)] : [term];
+
+export default evaluate;

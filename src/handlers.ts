@@ -1,4 +1,4 @@
-import { EvalStrategy } from './eval.ts';
+import { EvalStrategy } from './evaluate.ts';
 import { onTermInsert, StateUpdateFunction } from './state.ts';
 import type { IncompleteTerm } from './types.ts';
 

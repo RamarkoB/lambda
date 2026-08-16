@@ -266,6 +266,22 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     state.editIndex === 0 ? undoElement.classList.add('disabled') : undoElement.classList.remove('disabled');
     state.editIndex === state.editHistory.length - 1 ? redoElement.classList.add('disabled') : redoElement.classList.remove('disabled');
 
+    if (state.reductionIndex === 0) {
+        document.getElementById('first')?.classList.add('disabled');
+        document.getElementById('back')?.classList.add('disabled');
+    } else {
+        document.getElementById('first')?.classList.remove('disabled');
+        document.getElementById('back')?.classList.remove('disabled');
+    }
+
+    if (state.reductionIndex === state.termReductions.length - 1) {
+        document.getElementById('last')?.classList.add('disabled');
+        document.getElementById('next')?.classList.add('disabled');
+    } else {
+        document.getElementById('last')?.classList.remove('disabled');
+        document.getElementById('next')?.classList.remove('disabled');
+    }
+
     // Add hover and drag listeners to all relevant elements
     svg.querySelectorAll('.missing').forEach(addMissingEffect(setState));
     svg.querySelectorAll('.line, .label').forEach(addHoverEffect);

@@ -1,5 +1,5 @@
 import { encode, EncodedTerm } from './encode.ts';
-import betaReduce, { EvalStrategy } from './eval.ts';
+import evaluate, { EvalStrategy } from './evaluate.ts';
 import { RenderConfig } from './render.ts';
 import { type IncompleteTerm, isCompleteTerm, MISSING, TermType } from './types.ts';
 
@@ -36,39 +36,6 @@ const INITIAL_STATE: AppState = {
     reductionIndex: 0,
 };
 
-const reduce = (state: AppState): AppState => {
-    if (state.status !== AppStatus.Reduction) return state;
-
-    try {
-        const currTerm = state.termReductions[state.reductionIndex];
-        if (!isCompleteTerm(currTerm)) return { ...state, status: AppStatus.Error };
-
-        const newTerm = betaReduce(currTerm, state.evalStrategy);
-
-        return currTerm === newTerm
-            ? { ...state, status: AppStatus.Normalized }
-            : { ...state, reductionIndex: state.reductionIndex + 1, termReductions: [...state.termReductions, newTerm] };
-    } catch (_) {
-        console.log('Maxxed out baby!');
-        return { ...state, status: AppStatus.Error };
-    }
-};
-
-const totalReduce = (state: AppState): AppState => {
-    if (state.status !== AppStatus.Reduction) return { ...state, reductionIndex: state.termReductions.length - 1 };
-
-    const currTerm = state.termReductions[state.reductionIndex];
-    if (!isCompleteTerm(currTerm)) return state;
-
-    const newState = reduce(state);
-
-    // If the term is the same as the last reduction, we're done
-    return newState.termReductions.length >= 2 &&
-            newState.termReductions[newState.termReductions.length - 2] === newState.termReductions[newState.termReductions.length - 1]
-        ? newState
-        : totalReduce(newState);
-};
-
 const insertTerm = <T extends IncompleteTerm>(
     term: EncodedTerm<T>,
     encoding: string,
@@ -91,12 +58,9 @@ const insertTerm = <T extends IncompleteTerm>(
 const onTermInsert = (encoding: string, term: IncompleteTerm): StateUpdateFunction => (state) => {
     const newTerm = insertTerm(encode(state.editHistory[state.editIndex]), encoding, term);
     const editHistory = state.editHistory.concat([newTerm]);
+    if (!isCompleteTerm(newTerm)) return { ...state, editHistory, editIndex: editHistory.length - 1 };
 
-    if (isCompleteTerm(newTerm)) {
-        return { ...state, status: AppStatus.Reduction, editHistory, termReductions: [newTerm], reductionIndex: 0 };
-    }
-
-    return { ...state, editHistory, editIndex: editHistory.length - 1 };
+    return { ...state, editHistory, status: AppStatus.Reduction, termReductions: evaluate(newTerm, state.evalStrategy), reductionIndex: 0 };
 };
 
 const onUndo: StateUpdateFunction = (state) => ({
@@ -104,43 +68,42 @@ const onUndo: StateUpdateFunction = (state) => ({
     status: AppStatus.Edit,
     editIndex: Math.max(0, state.editIndex - 1),
     reductionIndex: 0,
+    termReductions: [],
 });
 
 const onRedo: StateUpdateFunction = (state) => {
     const editIndex = Math.min(state.editHistory.length - 1, state.editIndex + 1);
-    const status = isCompleteTerm(state.editHistory[editIndex]) ? AppStatus.Reduction : AppStatus.Edit;
-    return { ...state, status, editIndex, reductionIndex: 0 };
+    const currTerm = state.editHistory[editIndex];
+    if (!(isCompleteTerm(currTerm))) return { ...state, editIndex, status: AppStatus.Edit, reductionIndex: 0, termReductions: [] };
+
+    return { ...state, editIndex, status: AppStatus.Reduction, reductionIndex: 0, termReductions: evaluate(currTerm, state.evalStrategy) };
 };
-
-const onFirst: StateUpdateFunction = (state) => ({
-    ...state,
-    status: AppStatus.Reduction,
-    reductionIndex: 0,
-});
-
-const onBack: StateUpdateFunction = (state) => ({
-    ...state,
-    status: AppStatus.Reduction,
-    reductionIndex: Math.max(0, state.reductionIndex - 1),
-});
-
-const onNext: StateUpdateFunction = (state) =>
-    state.reductionIndex + 1 === state.termReductions.length ? reduce(state) : {
-        ...state,
-        status: AppStatus.Reduction,
-        reductionIndex: state.reductionIndex + 1,
-    };
-
 const onLabelToggle: StateUpdateFunction = ({ config, ...state }) => ({ ...state, config: { ...config, labels: !config.labels } });
 
 const onShowNameToggle: StateUpdateFunction = ({ config, ...state }) => ({ ...state, config: { ...config, showNames: !config.showNames } });
 
-const onEvalStrategyToggle = (state: AppState, evalStrategy: EvalStrategy): AppState => ({
+const onEvalStrategyToggle = (evalStrategy: EvalStrategy): StateUpdateFunction => (state: AppState): AppState => {
+    const currTerm = state.editHistory[state.editIndex];
+    if (!isCompleteTerm(currTerm)) return { ...state, reductionIndex: 0, evalStrategy };
+
+    return { ...state, status: AppStatus.Reduction, reductionIndex: 0, termReductions: evaluate(currTerm, evalStrategy), evalStrategy };
+};
+
+const onFirst: StateUpdateFunction = (state) => ({ ...state, status: AppStatus.Reduction, reductionIndex: 0 });
+
+const onBack: StateUpdateFunction = (state) => ({
     ...state,
-    reductionIndex: 0,
-    termReductions: state.termReductions.slice(0, 1),
-    evalStrategy,
+    status: AppStatus.Reduction,
+    reductionIndex: Math.max(state.reductionIndex - 1, 0),
 });
+
+const onNext: StateUpdateFunction = (state) => ({
+    ...state,
+    status: AppStatus.Reduction,
+    reductionIndex: Math.min(state.reductionIndex + 1, state.termReductions.length - 1),
+});
+
+const onLast: StateUpdateFunction = (state) => ({ ...state, status: AppStatus.Reduction, reductionIndex: state.termReductions.length });
 
 export type { AppState, StateUpdateFunction };
 export {
@@ -150,11 +113,10 @@ export {
     onEvalStrategyToggle,
     onFirst,
     onLabelToggle,
+    onLast,
     onNext,
     onRedo,
     onShowNameToggle,
     onTermInsert,
     onUndo,
-    reduce,
-    totalReduce,
 };
