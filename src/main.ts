@@ -1,4 +1,4 @@
-import initialize from './intialize.ts';
+import initialize from './initialize.ts';
 import renderState from './render.ts';
 import { INITIAL_STATE, StateUpdateFunction } from './state.ts';
 
