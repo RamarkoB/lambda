@@ -39,7 +39,7 @@ const createSidebarNode = ([termName, termFn]: SidebarNode) => {
     return node;
 };
 
-// initalize the main view and sidebar
+// initialize the main view and sidebar
 const initialize = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) => {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
