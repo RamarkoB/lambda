@@ -135,7 +135,12 @@ const onLabelToggle: StateUpdateFunction = ({ config, ...state }) => ({ ...state
 
 const onShowNameToggle: StateUpdateFunction = ({ config, ...state }) => ({ ...state, config: { ...config, showNames: !config.showNames } });
 
-const onEvalStrategyToggle = (state: AppState, evalStrategy: EvalStrategy): AppState => ({ ...state, evalStrategy });
+const onEvalStrategyToggle = (state: AppState, evalStrategy: EvalStrategy): AppState => ({
+    ...state,
+    reductionIndex: 0,
+    termReductions: state.termReductions.slice(0, 1),
+    evalStrategy,
+});
 
 export type { AppState, StateUpdateFunction };
 export {
