@@ -1,4 +1,4 @@
-import { encode } from './encode.ts';
+import { encodeTerm } from './utils.ts';
 import { addHandleEvalStrategyUpdate, addHandleKeydown, addOnClick } from './handlers.ts';
 import { renderTermGroup } from './render.ts';
 import {
@@ -28,7 +28,7 @@ const createSidebarNode = ([termName, termFn]: [string, (varName: string) => Inc
     const node = document.createElement('div');
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
-    const encodedTerm = encode(termFn(' '));
+    const encodedTerm = encodeTerm(termFn(' '));
     renderTermGroup(svg, encodedTerm, { labels: false, showNames: false });
 
     const nameNode = document.createElement('p');

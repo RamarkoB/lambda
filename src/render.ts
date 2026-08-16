@@ -1,5 +1,5 @@
 import { addHoverEffect, addMissingEffect } from './handlers.ts';
-import { encode, type EncodedTerm } from './encode.ts';
+import { type EncodedTerm, encodeTerm } from './utils.ts';
 import { type AppState, AppStatus, type StateUpdateFunction } from './state.ts';
 import { type Application, type IncompleteApplication, type IncompleteTerm, MISSING, TermType } from './types.ts';
 
@@ -254,7 +254,7 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     const currTerm = state.status === AppStatus.Edit ? state.editHistory[state.editIndex] : state.termReductions[state.reductionIndex];
-    const encodedTerm = encode(currTerm);
+    const encodedTerm = encodeTerm(currTerm);
     renderTermGroup(svg, encodedTerm, state.config);
 
     view.appendChild(svg);
