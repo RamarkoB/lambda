@@ -25,7 +25,7 @@ type StateUpdateFunction = (newState: AppState) => AppState;
 
 const INITIAL_STATE: AppState = {
     config: { labels: true, showNames: true },
-    evalStrategy: EvalStrategy.NormalOrder,
+    evalStrategy: EvalStrategy.Normal,
     status: AppStatus.Edit,
 
     editHistory: [MISSING],

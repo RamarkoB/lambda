@@ -1,8 +1,8 @@
 import { Application, type Term, TermType, type Value } from './types.ts';
 
 export enum EvalStrategy {
-    NormalOrder = 'Normal Order',
-    ApplicativeOrder = 'Applicative Order',
+    Normal = 'Normal Order',
+    Applicative = 'Applicative Order',
     CallByValue = 'Call by Value',
     CallByName = 'Call by Name (Lazy)',
 }
@@ -10,6 +10,19 @@ export enum EvalStrategy {
 type Reduction = (term: Application, strategy: EvalStrategy) => Term | undefined;
 
 const VAR_NAMES = 'abcdefghijklmnopqrstuvwxyz';
+
+// VARIABLE HELPERS
+// helper to get all variable names inside of a term
+const getVariableNames = (term: Term): Set<string> => {
+    switch (term.type) {
+        case TermType.Value:
+            return new Set([term.val]);
+        case TermType.Abstraction:
+            return getVariableNames(term.body).add(term.param.val);
+        case TermType.Application:
+            return getVariableNames(term.func).union(getVariableNames(term.arg));
+    }
+};
 
 // helper to get a fresh unused variable name
 const getFreshVariableName = (usedNames: Set<string>, layers: number = 0): string => {
@@ -34,18 +47,7 @@ const getFreeVariables = (term: Term): Set<string> => {
     }
 };
 
-// helper to get all variable names inside of a term
-const getVariableNames = (term: Term): Set<string> => {
-    switch (term.type) {
-        case TermType.Value:
-            return new Set([term.val]);
-        case TermType.Abstraction:
-            return getVariableNames(term.body).add(term.param.val);
-        case TermType.Application:
-            return getVariableNames(term.func).union(getVariableNames(term.arg));
-    }
-};
-
+// α-CONVERSION
 // helper to rename the free uses of a variable
 const rename = (oldName: string, newName: string, term: Term): Term => {
     switch (term.type) {
@@ -58,7 +60,7 @@ const rename = (oldName: string, newName: string, term: Term): Term => {
     }
 };
 
-// [value --> term] expr
+// helper to substitute all free instances of value with term inside of expr ([value --> term] expr)
 const subsitute = (value: Value, term: Term, expr: Term): Term => {
     switch (expr.type) {
         case TermType.Value:
@@ -67,18 +69,6 @@ const subsitute = (value: Value, term: Term, expr: Term): Term => {
             return { ...expr, func: subsitute(value, term, expr.func), arg: subsitute(value, term, expr.arg) };
         case TermType.Abstraction:
             return expr.param.val === value.val ? expr : { ...expr, body: subsitute(value, term, expr.body) };
-    }
-};
-
-// helper to determine if a term is a reducible term (redux)
-const isRedux = (term: Term): boolean => {
-    switch (term.type) {
-        case TermType.Value:
-            return false;
-        case TermType.Abstraction:
-            return isRedux(term.body);
-        case TermType.Application:
-            return term.func.type === TermType.Abstraction || isRedux(term.func) || isRedux(term.arg);
     }
 };
 
@@ -102,38 +92,61 @@ const alphaConvert = (term: Term, usedNames: Set<string>): Term => {
     }
 };
 
+// β-REDUCTION
+// helper to determine if a term is a reducible term (redux)
+const isRedux = (term: Term): boolean => {
+    switch (term.type) {
+        case TermType.Value:
+            return false;
+        case TermType.Abstraction:
+            return isRedux(term.body);
+        case TermType.Application:
+            return term.func.type === TermType.Abstraction || isRedux(term.func) || isRedux(term.arg);
+    }
+};
+
+// helper to determinte if a strategy is strong (abstractions are not treated as values)
+const isStrongStrategy = (strategy: EvalStrategy) => strategy === EvalStrategy.Normal || strategy === EvalStrategy.Applicative;
+
+// helper to determines if a redux is reducible under the current strategy:
+// - strong strategies reduce any redux
+// - weak strategies only reduce applications
+// - call by name never reduces an argument
+const canReduce = (term: Term, strategy: EvalStrategy): boolean => {
+    if (isStrongStrategy(strategy)) return isRedux(term);
+    if (term.type !== TermType.Application) return false;
+
+    const canReduceArg = strategy === EvalStrategy.CallByValue && canReduce(term.arg, strategy);
+    return (term.func.type === TermType.Abstraction || canReduce(term.func, strategy) || canReduceArg);
+};
+
 const applyReduce = ({ func, arg }: Application) =>
     func.type === TermType.Abstraction ? subsitute(func.param, arg, alphaConvert(func.body, getFreeVariables(arg))) : undefined;
-const funcReduce: Reduction = (term, strategy) => isRedux(term.func) ? { ...term, func: betaReduce(term.func, strategy) } : undefined;
-const argReduce: Reduction = (term, strategy) => isRedux(term.arg) ? { ...term, arg: betaReduce(term.arg, strategy) } : undefined;
+const funcReduce: Reduction = (term, strategy) =>
+    canReduce(term.func, strategy) ? { ...term, func: betaReduce(term.func, strategy) } : undefined;
+const argReduce: Reduction = (term, strategy) =>
+    canReduce(term.arg, strategy) ? { ...term, arg: betaReduce(term.arg, strategy) } : undefined;
 
 // β-reduction function used to reduce a term
 const betaReduce = (term: Term, strategy: EvalStrategy): Term => {
-    if (term.type === TermType.Value) return term;
-    if (term.type === TermType.Abstraction) return { ...term, body: betaReduce(term.body, strategy) };
+    if (term.type === TermType.Abstraction && isStrongStrategy(strategy)) return { ...term, body: betaReduce(term.body, strategy) };
+    if ((term.type === TermType.Abstraction) || term.type === TermType.Value) return term;
 
     switch (strategy) {
-        // normal order reduce the leftmost-outermost redux first (application -> application function -> application arg)
-        case EvalStrategy.NormalOrder:
+        case EvalStrategy.Normal: // normal order strongly reduces the leftmost-outermost redux first
             return applyReduce(term) || funcReduce(term, strategy) || argReduce(term, strategy) || term;
 
-        // applicative order reduces the leftmost-innermost redux first
-        case EvalStrategy.ApplicativeOrder:
+        case EvalStrategy.CallByName: // call by name weakly reduces the leftmost-outermost redux first (and skips argument reduction)
+            return applyReduce(term) || funcReduce(term, strategy) || term;
+
+        case EvalStrategy.Applicative: // applicative order strongly reduces the leftmost-innermost redux first
+        case EvalStrategy.CallByValue: // call by value weakly reduces the leftmost-innermost redux first
             return funcReduce(term, strategy) || argReduce(term, strategy) || applyReduce(term) || term;
-
-        // prioritize evaluation of abstraction argument before abstraction function
-        case EvalStrategy.CallByValue:
-            return argReduce(term, strategy) || applyReduce(term) || funcReduce(term, strategy) || term;
-
-        // defer evaluation of abstraction argument after abstraction function
-        case EvalStrategy.CallByName: {
-            return term;
-        }
     }
 };
 
 const evaluate = (term: Term, strategy: EvalStrategy): Term[] =>
-    isRedux(term) ? [term, ...evaluate(betaReduce(term, strategy), strategy)] : [term];
+    canReduce(term, strategy) ? [term, ...evaluate(betaReduce(term, strategy), strategy)] : [term];
 
-export { alphaConvert, betaReduce, getFreeVariables, isRedux };
+export { alphaConvert, betaReduce, canReduce, getFreeVariables, isRedux };
 export default evaluate;
