@@ -1,21 +1,21 @@
 import { addHoverEffect, addMissingEffect } from './handlers.ts';
 import { type EncodedTerm, encodeTerm } from './utils.ts';
-import { type AppState, AppStatus, type StateUpdateFunction } from './state.ts';
+import { type AppState, AppStatus, BUTTONS, type StateUpdateFunction } from './state.ts';
 import { type Application, type IncompleteApplication, type IncompleteTerm, MISSING, TermType } from './types.ts';
 
 type Alignment = 'left' | 'middle' | 'right';
 
 type RenderConfig = { labels: boolean; showNames: boolean };
 
-type RenderTermFunction = <T extends IncompleteTerm>(
+type RenderTermFunction = (
     group: SVGGElement,
-    term: EncodedTerm<T>,
-    horLayers: number | [number, number],
+    term: EncodedTerm<IncompleteTerm>,
+    horLayers: [termStart: number, groupStart: number],
     verTopLayer: number,
     verBottomLayer: number,
     config: RenderConfig,
     values: Record<string, number>,
-) => [number, number, number];
+) => [horLayer: number, topVerLayer: number, bottomVerLayer: number];
 
 const HOR_GAP = 15;
 const VER_GAP = 10;
@@ -34,7 +34,7 @@ const OPEN = txtWrapper(TermType.Application, '(');
 const CLOSE = txtWrapper(TermType.Application, ')');
 
 // format term for display
-const formatTerm = <T extends IncompleteTerm>(term: EncodedTerm<T>, isShowNames: boolean): string => {
+const formatTerm = (term: EncodedTerm<IncompleteTerm>, isShowNames: boolean): string => {
     switch (term.type) {
         case TermType.Missing: // show missing values as "[  ]"
             return txtGroupWrapper(term.encoding, '[ ]');
@@ -125,21 +125,19 @@ const renderAbstractionGap = (
     term: Application | IncompleteApplication,
     termStart: number,
 ): [number, number] => {
-    const abstractGap = labels ? 2 : 1;
-    const needsGap = term.func?.type === TermType.Abstraction || term.arg?.type === TermType.Abstraction;
-    const newTermStart = horFuncLayer + (!term.func ? abstractGap - 1 : needsGap ? abstractGap : 0);
-    const newGroupStart = term.func?.type === TermType.Value && term.arg?.type === TermType.Application ? termStart : newTermStart;
+    const needsGap = term.func.type === TermType.Abstraction || term.arg.type === TermType.Abstraction;
+    const newTermStart = horFuncLayer + (needsGap ? (labels ? 2 : 1) : 0);
+    const willIntersectPreviousTerm = term.func.type === TermType.Value || term.func.type === TermType.Missing;
+    const newGroupStart = willIntersectPreviousTerm && term.arg.type === TermType.Application ? termStart : newTermStart;
     return [newTermStart, newGroupStart];
 };
 
 // main recursive term rendering function
 const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, verBottomLayer, config, values) => {
-    const [termStart, groupStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
+    const [termStart, groupStart] = horLayers;
 
     switch (term.type) {
         case TermType.Missing: {
-            const [termStart] = typeof horLayers === 'number' ? [horLayers, horLayers] : horLayers;
-
             const missingGroup = renderGroup(group, `group missing term-${term.encoding}`);
             missingGroup.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, 1));
             if (config.labels) missingGroup.append(renderLabel(term.type, '[  ]', term.encoding, termStart, 0));
@@ -228,59 +226,42 @@ const renderChildTerm: RenderTermFunction = (group, term, ...renderArgs) =>
 // render a term and attach it so an svg element
 const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, config: RenderConfig) => {
     const group = renderGroup(parent, 'group');
-    parent.appendChild(group);
 
     const termDepth = getNumTermLayers(term) + ABSTRACT_GAP;
-    const [termEnd] = renderTerm(group, term, 0, 0, termDepth, config, {});
+    const [termEnd] = renderTerm(group, term, [0, 0], 0, termDepth, config, {});
     parent.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 };
+
+const disableButton = (id: string, disabled: boolean) => document.getElementById(id)?.classList.toggle('disabled', disabled);
 
 // main function to render a term inside of the `lambdaView` element
 const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunction) => void) => {
     const view = document.getElementById('lambdaView');
     const termElement = document.getElementById('lambdaTerm');
-    const menuElement = document.getElementById('menu');
     const indexElement = document.getElementById('index');
-    const undoElement = document.getElementById('undo');
-    const redoElement = document.getElementById('redo');
-    if (!view || !termElement || !menuElement || !indexElement || !undoElement || !redoElement) return;
+    if (!view || !termElement || !indexElement) return;
 
     // Clear previous content
-    if (view.firstChild) view.removeChild(view.firstChild);
+    view.replaceChildren();
 
     if (state.status === AppStatus.Edit && state.editHistory.length === 1 && state.editHistory[0] === MISSING) {
         console.log('Show Empty View!');
     }
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const currTerm = state.status === AppStatus.Edit ? state.editHistory[state.editIndex] : state.termReductions[state.reductionIndex];
+
+    const isEditing = state.status === AppStatus.Edit;
+    const currTerm = isEditing ? state.editHistory[state.editIndex] : state.termEvals[state.evalIndex];
     const encodedTerm = encodeTerm(currTerm);
     renderTermGroup(svg, encodedTerm, state.config);
 
     view.appendChild(svg);
     termElement.innerHTML = formatTerm(encodedTerm, state.config.showNames);
-    indexElement.innerText = state.status === AppStatus.Edit ? '1 / ??' : `${state.reductionIndex + 1} / ${state.termReductions.length}`;
+    indexElement.innerText = isEditing ? '1 / ??' : `${state.evalIndex + 1} / ${state.termEvals.length}`;
 
-    // disable or enable the menu element buttons, depending on app status
-    state.status === AppStatus.Edit ? menuElement?.classList.add('disabled') : menuElement?.classList.remove('disabled');
-    state.editIndex === 0 ? undoElement.classList.add('disabled') : undoElement.classList.remove('disabled');
-    state.editIndex === state.editHistory.length - 1 ? redoElement.classList.add('disabled') : redoElement.classList.remove('disabled');
-
-    if (state.reductionIndex === 0) {
-        document.getElementById('first')?.classList.add('disabled');
-        document.getElementById('back')?.classList.add('disabled');
-    } else {
-        document.getElementById('first')?.classList.remove('disabled');
-        document.getElementById('back')?.classList.remove('disabled');
-    }
-
-    if (state.reductionIndex === state.termReductions.length - 1) {
-        document.getElementById('last')?.classList.add('disabled');
-        document.getElementById('next')?.classList.add('disabled');
-    } else {
-        document.getElementById('last')?.classList.remove('disabled');
-        document.getElementById('next')?.classList.remove('disabled');
-    }
+    // disable or enable the menu buttons, depending on app status
+    disableButton('menu', isEditing);
+    BUTTONS.forEach(({ id, isDisabled }) => disableButton(id, isDisabled(state)));
 
     // Add hover and drag listeners to all relevant elements
     svg.querySelectorAll('.missing').forEach(addMissingEffect(setState));

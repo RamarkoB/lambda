@@ -1,4 +1,4 @@
-import { type Abstraction, Application, type Term, TermType, type Value } from './types.ts';
+import { Application, type Term, TermType, type Value } from './types.ts';
 
 export enum EvalStrategy {
     NormalOrder = 'Normal Order',
@@ -7,64 +7,68 @@ export enum EvalStrategy {
     CallByName = 'Call by Name (Lazy)',
 }
 
-enum VariableType {
-    Bound = 'Bound',
-    Free = 'Free',
-}
-
 type Reduction = (term: Application, strategy: EvalStrategy) => Term | undefined;
 
 const VAR_NAMES = 'abcdefghijklmnopqrstuvwxyz';
 
-// helper to get fresh variable names for α-conversion to avoid variable naming overlap
-const getFreshVariableNames = (usedNames: Set<string>, layers: number = 0): Set<string> => {
-    const varNames = new Set(VAR_NAMES.split('').map((char) => char.concat("'".repeat(layers))));
-    const diff = varNames.difference(usedNames);
-    return diff.size === 0 ? getFreshVariableNames(usedNames, layers + 1) : diff;
+// helper to get a fresh unused variable name
+const getFreshVariableName = (usedNames: Set<string>, layers: number = 0): string => {
+    const freshVarName = [...VAR_NAMES].map((char) => char.concat("'".repeat(layers))).find((name) => !usedNames.has(name));
+    if (freshVarName) return freshVarName;
+
+    return getFreshVariableName(usedNames, layers + 1);
 };
 
-// helper to get all bound or free variables (bound variables are tied to a parent abstraction while free variables are not)
-const getVariables = (term: Term, varType: VariableType): Set<string> => {
+// helper to get all free variables (variables not tied to an enclosing abstraction)
+const getFreeVariables = (term: Term): Set<string> => {
     switch (term.type) {
         case TermType.Value:
-            return varType === VariableType.Bound ? new Set() : new Set([term.val]);
+            return new Set([term.val]);
         case TermType.Abstraction: {
-            const variablesInBody = getVariables(term.body, varType);
-            varType === VariableType.Bound ? variablesInBody.add(term.param.val) : variablesInBody.delete(term.param.val);
-            return variablesInBody;
+            const freeInBody = getFreeVariables(term.body);
+            freeInBody.delete(term.param.val);
+            return freeInBody;
         }
         case TermType.Application:
-            return new Set([...getVariables(term.func, varType), ...getVariables(term.arg, varType)]);
+            return getFreeVariables(term.func).union(getFreeVariables(term.arg));
     }
 };
 
-// helper to rename function used in both α-conversion and β-reduction
-const rename = <T extends Term>(oldName: string, newName: string, term: T): T => {
+// helper to get all variable names inside of a term
+const getVariableNames = (term: Term): Set<string> => {
+    switch (term.type) {
+        case TermType.Value:
+            return new Set([term.val]);
+        case TermType.Abstraction:
+            return getVariableNames(term.body).add(term.param.val);
+        case TermType.Application:
+            return getVariableNames(term.func).union(getVariableNames(term.arg));
+    }
+};
+
+// helper to rename the free uses of a variable
+const rename = (oldName: string, newName: string, term: Term): Term => {
     switch (term.type) {
         case TermType.Value:
             return term.val === oldName ? { ...term, val: newName } : term;
         case TermType.Application:
             return { ...term, func: rename(oldName, newName, term.func), arg: rename(oldName, newName, term.arg) };
-        case TermType.Abstraction: {
-            return { ...term, param: rename(oldName, newName, term.param), body: rename(oldName, newName, term.body) };
-        }
+        case TermType.Abstraction:
+            return term.param.val === oldName ? term : { ...term, body: rename(oldName, newName, term.body) };
     }
 };
 
 // [value --> term] expr
-const subsitute = (value: Value<string>, term: Term, expr: Term, freshNames: Set<string>): Term => {
+const subsitute = (value: Value, term: Term, expr: Term): Term => {
     switch (expr.type) {
         case TermType.Value:
             return expr.val === value.val ? term : expr;
         case TermType.Application:
-            return { ...expr, func: subsitute(value, term, expr.func, freshNames), arg: subsitute(value, term, expr.arg, freshNames) };
-        case TermType.Abstraction: {
-            return expr.param === value ? expr : { ...expr, body: subsitute(value, term, expr.body, freshNames) };
-        }
+            return { ...expr, func: subsitute(value, term, expr.func), arg: subsitute(value, term, expr.arg) };
+        case TermType.Abstraction:
+            return expr.param.val === value.val ? expr : { ...expr, body: subsitute(value, term, expr.body) };
     }
 };
-
-// type IsRedux<T extends Term> = T["type"] extends TermType.Value ? false : T["type"] extends TermType.Abstraction ? IsRedux<T["body"]>
 
 // helper to determine if a term is a reducible term (redux)
 const isRedux = (term: Term): boolean => {
@@ -78,26 +82,28 @@ const isRedux = (term: Term): boolean => {
     }
 };
 
-// func, arg -> ([value, term, expr, freshNames])
-// α-conversion function used to rename all uses of a variable
-const alphaConvert = (func: Abstraction<string>, arg: Term): [value: Value<string>, term: Term, expr: Term, freshNames: Set<string>] => {
-    const paramName = new Set(func.param.val);
+// α-conversion function used to rename all free uses of a variable to a fresh name
+const alphaConvert = (term: Term, usedNames: Set<string>): Term => {
+    switch (term.type) {
+        case TermType.Value:
+            return term;
 
-    // get bound terms in arg and function body and check for overlap
-    const boundVarsInArg = getVariables(arg, VariableType.Bound);
-    const boundVarsInBody = getVariables(func.body, VariableType.Bound);
+        case TermType.Application:
+            return { ...term, func: alphaConvert(term.func, usedNames), arg: alphaConvert(term.arg, usedNames) };
 
-    const usedNames = boundVarsInArg.union(boundVarsInBody).union(paramName);
-    const overlappingNames = boundVarsInArg.intersection(boundVarsInBody).union(paramName);
+        case TermType.Abstraction: {
+            if (!usedNames.has(term.param.val)) return { ...term, body: alphaConvert(term.body, usedNames) };
 
-    const freshNamesList = [...getFreshVariableNames(usedNames)];
-    const freshNames = new Set(freshNamesList.toSpliced(0, overlappingNames.size));
-    const freshArg = [...overlappingNames].reduce((acc, oldName, i) => rename(oldName, freshNamesList[i], acc), arg);
-
-    return [func.param, freshArg, func.body, freshNames];
+            // avoid every name the body already mentions, so renaming cannot collide with an inner binder
+            const freshName = getFreshVariableName(usedNames.union(getVariableNames(term.body)));
+            const body = rename(term.param.val, freshName, term.body);
+            return { ...term, param: { ...term.param, val: freshName }, body: alphaConvert(body, usedNames) };
+        }
+    }
 };
 
-const applyReduce = ({ func, arg }: Application) => func.type === TermType.Abstraction ? subsitute(...alphaConvert(func, arg)) : undefined;
+const applyReduce = ({ func, arg }: Application) =>
+    func.type === TermType.Abstraction ? subsitute(func.param, arg, alphaConvert(func.body, getFreeVariables(arg))) : undefined;
 const funcReduce: Reduction = (term, strategy) => isRedux(term.func) ? { ...term, func: betaReduce(term.func, strategy) } : undefined;
 const argReduce: Reduction = (term, strategy) => isRedux(term.arg) ? { ...term, arg: betaReduce(term.arg, strategy) } : undefined;
 
@@ -129,4 +135,5 @@ const betaReduce = (term: Term, strategy: EvalStrategy): Term => {
 const evaluate = (term: Term, strategy: EvalStrategy): Term[] =>
     isRedux(term) ? [term, ...evaluate(betaReduce(term, strategy), strategy)] : [term];
 
+export { alphaConvert, betaReduce, getFreeVariables, isRedux };
 export default evaluate;

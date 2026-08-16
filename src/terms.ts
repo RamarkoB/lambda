@@ -1,6 +1,6 @@
 import {
-    type Application,
     apply,
+    createValue,
     IncompleteAbstraction,
     IncompleteApplication,
     IncompleteTerm,
@@ -9,6 +9,8 @@ import {
     namedApply,
     namedLambda,
 } from './types.ts';
+
+type SidebarNode = [string, (varName: string) => IncompleteTerm];
 
 // combinators
 const lambdaI = namedLambda('I Combinator', 'x', 'x'); // I combinator (identity function)
@@ -19,14 +21,8 @@ const lambdaB = namedLambda('B Combinator', 'f', lambda('g', lambda('x', apply('
 const lambdaC = namedLambda('C Combinator', 'f', lambda('x', lambda('y', apply(apply('f', 'y'), 'x')))); // C combinator (flip arguments)
 const lambdaW = namedLambda('W Combinator', 'f', lambda('x', apply(apply('f', 'x'), 'x'))); // W combinator (duplication)
 const lambdaY = namedLambda('Y Combinator', 'f', apply(lambda('x', apply('x', 'x')), lambda('x', apply('f', apply('x', 'x'))))); // Y combinator (fixed-point)
-const lambdaZ = namedLambda(
-    'Z Combinator',
-    'f',
-    apply(
-        lambda('x', lambda('y', apply('f', lambda('v', apply(apply('x', 'x'), 'y'))))),
-        lambda('x', lambda('y', apply('f', lambda('v', apply(apply('x', 'x'), 'y'))))),
-    ),
-); // Z combinator
+const zHalf = lambda('x', lambda('y', apply('f', lambda('v', apply(apply('x', 'x'), 'y')))));
+const lambdaZ = namedLambda('Z Combinator', 'f', apply(zHalf, zHalf)); // Z combinator
 const omega = namedApply('Ω Combinator', lambdaU, lambdaU);
 
 // logical
@@ -37,18 +33,11 @@ const and = namedLambda('and', 'p', lambda('q', apply(apply('p', 'q'), 'p'))); /
 const or = namedLambda('or', 'p', lambda('q', apply(apply('p', 'p'), 'q'))); // Logical OR
 const not = namedLambda('not', 'p', apply(apply('p', lambdaFalse), lambdaTrue)); // Logical NOT
 
-// numbers
-const numberEncoder = (layers: number): Application => layers === 1 ? apply('f', 'x') : apply('f', numberEncoder(layers - 1));
-const zero = namedLambda('zero', 'f', lambda('x', 'x'));
-const one = namedLambda('one', 'f', lambda('x', numberEncoder(1)));
-const two = namedLambda('two', 'f', lambda('x', numberEncoder(2)));
-const three = namedLambda('three', 'f', lambda('x', numberEncoder(3)));
-const four = namedLambda('four', 'f', lambda('x', numberEncoder(4)));
-const five = namedLambda('five', 'f', lambda('x', numberEncoder(5)));
-const six = namedLambda('six', 'f', lambda('x', numberEncoder(6)));
-const seven = namedLambda('seven', 'f', lambda('x', numberEncoder(7)));
-const eight = namedLambda('eight', 'f', lambda('x', numberEncoder(8)));
-const nine = namedLambda('nine', 'f', lambda('x', numberEncoder(9)));
+// numbers — the church numeral for n applies `f` to `x` n times
+const numberEncoder = (layers: number): IncompleteTerm => layers === 0 ? createValue('x') : apply('f', numberEncoder(layers - 1));
+const NUMERAL_NAMES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+const numerals = NUMERAL_NAMES.map((name, value) => namedLambda(name, 'f', lambda('x', numberEncoder(value))));
+const one = numerals[1];
 
 // arithmetic
 const succ = namedLambda('succ', 'w', lambda('f', lambda('x', apply('f', apply(apply('w', 'f'), 'x')))));
@@ -92,14 +81,14 @@ const tail = namedLambda(
 );
 
 const makeSidebarTerm = (
-    term: (IncompleteApplication | IncompleteAbstraction<string>) & { name: string },
+    term: (IncompleteApplication | IncompleteAbstraction) & { name: string },
     layers = 0,
 ): [string, () => IncompleteTerm] => {
     const lambdaTerm = Array.from({ length: layers }, (_, index) => index).reduce<IncompleteTerm>((acc, _) => apply(acc, MISSING), term);
     return [term.name, () => lambdaTerm];
 };
 
-const terms: [string, (varName: string) => IncompleteTerm][] = [
+const terms: SidebarNode[] = [
     // logical
     makeSidebarTerm(lambdaTrue),
     makeSidebarTerm(lambdaFalse),
@@ -109,16 +98,7 @@ const terms: [string, (varName: string) => IncompleteTerm][] = [
     makeSidebarTerm(lambdaIf, 3),
 
     // numbers
-    makeSidebarTerm(zero),
-    makeSidebarTerm(one),
-    makeSidebarTerm(two),
-    makeSidebarTerm(three),
-    makeSidebarTerm(four),
-    makeSidebarTerm(five),
-    makeSidebarTerm(six),
-    makeSidebarTerm(seven),
-    makeSidebarTerm(eight),
-    makeSidebarTerm(nine),
+    ...numerals.map((numeral) => makeSidebarTerm(numeral)),
 
     // arithmetic
     makeSidebarTerm(succ, 1),
@@ -159,4 +139,5 @@ const terms: [string, (varName: string) => IncompleteTerm][] = [
     makeSidebarTerm(omega),
 ];
 
+export type { SidebarNode };
 export default terms;

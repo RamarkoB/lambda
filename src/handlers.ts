@@ -46,8 +46,10 @@ const addHandleEvalStrategyUpdate = (callback: (newSrategy: EvalStrategy) => voi
         (event) => callback((event.currentTarget as HTMLSelectElement)?.value as EvalStrategy),
     );
 
-const addHandleKeydown = (undo: () => void, redo: () => void, back: () => void, next: () => void) => {
+const addHandleKeydown = ([undo, redo, next, back]: (() => void)[]) => {
     document.addEventListener('keydown', (keyEvent) => {
+        if (keyEvent.target instanceof HTMLElement && keyEvent.target.id === 'varName') return;
+
         switch (keyEvent.key) {
             case 'z':
                 keyEvent.preventDefault();
@@ -57,18 +59,17 @@ const addHandleKeydown = (undo: () => void, redo: () => void, back: () => void, 
 
             case 'ArrowRight':
                 keyEvent.preventDefault();
-                back();
+                next();
                 break;
 
             case 'ArrowLeft':
                 keyEvent.preventDefault();
-                next();
+                back();
                 break;
 
             case 'Escape': {
-                const resizeCheckbox = document.getElementsByTagName('input').namedItem('resizeCheckbox');
-                if (!resizeCheckbox) return;
-                resizeCheckbox.checked = false;
+                const resizeCheckbox = document.getElementById('resizeCheckbox');
+                if (resizeCheckbox instanceof HTMLInputElement) resizeCheckbox.checked = false;
                 break;
             }
         }

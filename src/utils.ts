@@ -63,7 +63,7 @@ const isTermComplete = (term: IncompleteTerm): term is Term => {
         case TermType.Value:
             return true;
         case TermType.Abstraction:
-            return isTermComplete(term.body) && isTermComplete(term.param);
+            return isTermComplete(term.body);
         case TermType.Application:
             return isTermComplete(term.arg) && isTermComplete(term.func);
     }

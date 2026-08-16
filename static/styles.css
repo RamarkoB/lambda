@@ -161,11 +161,6 @@ div > #resizeCheckbox:checked {
     gap: 8px;
 }
 
-#varNameWrapper > p {
-    text-align: center;
-    margin: 0;
-}
-
 #varName {
     width: 1rem;
     border: 3px solid black;

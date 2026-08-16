@@ -6,55 +6,48 @@ enum TermType {
 }
 
 // Valid Lambda Calculus Terms
-type Value<T extends string> = { type: TermType.Value; val: T };
-type Abstraction<T extends string> = { type: TermType.Abstraction; name?: string; param: Value<T>; body: Term };
+type Value = { type: TermType.Value; val: string };
+type Abstraction = { type: TermType.Abstraction; name?: string; param: Value; body: Term };
 type Application = { type: TermType.Application; name?: string; func: Term; arg: Term };
-type Term = Value<string> | Abstraction<string> | Application;
+type Term = Value | Abstraction | Application;
 
 // Incomplete Lambda Calculus Terms to allow inserting terms
 type MissingTerm = { type: TermType.Missing };
-type IncompleteAbstraction<T extends string> = { type: TermType.Abstraction; name?: string; param: Value<T>; body: IncompleteTerm };
+type IncompleteAbstraction = { type: TermType.Abstraction; name?: string; param: Value; body: IncompleteTerm };
 type IncompleteApplication = { type: TermType.Application; name?: string; func: IncompleteTerm; arg: IncompleteTerm };
-type IncompleteTerm = MissingTerm | IncompleteAbstraction<string> | IncompleteApplication | Term;
+type IncompleteTerm = MissingTerm | IncompleteAbstraction | IncompleteApplication | Term;
 
 // Type alias for term children (can be Term, MissingTerm, or a string (For Values and Abstractions))
 type TermChild = IncompleteTerm | string;
 
-// helper types for detecticing if a term is incomplete
-type IsIncompleteAbstraction<T extends string, TBody extends TermChild> = TBody extends Term ? Abstraction<T> : IncompleteAbstraction<T>;
-type IsIncompleteApplication<TFunc extends TermChild, TArg extends TermChild> = [TFunc, TArg] extends [Term | string, Term | string]
-    ? Application
-    : IncompleteApplication;
-
 // constructors
 const MISSING: MissingTerm = { type: TermType.Missing };
 
-const createTerm = <TBody extends TermChild>(val: TBody): TBody extends IncompleteTerm ? IncompleteTerm : Term =>
-    typeof val === 'string' ? { type: TermType.Value, val } : (val as TBody extends IncompleteTerm ? IncompleteTerm : Term);
+const createValue = (val: string): Value => ({ type: TermType.Value, val });
 
-const createValue = <T extends string>(val: T): Value<T> => ({ type: TermType.Value, val });
+const createTerm = (val: TermChild): IncompleteTerm => typeof val === 'string' ? createValue(val) : val;
 
-const lambda = <T extends string, TBody extends TermChild>(
-    param: T,
-    body: TBody,
-) => ({ type: TermType.Abstraction, param: createValue(param), body: createTerm(body) } as IsIncompleteAbstraction<T, TBody>);
+const lambda = (param: string, body: TermChild): IncompleteAbstraction => ({
+    type: TermType.Abstraction,
+    param: createValue(param),
+    body: createTerm(body),
+});
 
-const namedLambda = <T extends string, TBody extends TermChild>(
-    name: string,
-    param: T,
-    bound: TBody,
-) => ({ name, ...lambda(param, bound) } as IsIncompleteAbstraction<T, TBody> & { name: string });
+const namedLambda = (name: string, param: string, bound: TermChild): IncompleteAbstraction & { name: string } => ({
+    name,
+    ...lambda(param, bound),
+});
 
-const apply = <TFunc extends TermChild, TArg extends TermChild>(
-    func: TFunc,
-    arg: TArg,
-) => ({ type: TermType.Application, func: createTerm(func), arg: createTerm(arg) }) as IsIncompleteApplication<TFunc, TArg>;
+const apply = (func: TermChild, arg: TermChild): IncompleteApplication => ({
+    type: TermType.Application,
+    func: createTerm(func),
+    arg: createTerm(arg),
+});
 
-const namedApply = <TFunc extends TermChild, TArg extends TermChild>(
-    name: string,
-    func: TFunc,
-    arg: TArg,
-) => ({ name, ...apply(func, arg) } as IsIncompleteApplication<TFunc, TArg> & { name: string });
+const namedApply = (name: string, func: TermChild, arg: TermChild): IncompleteApplication & { name: string } => ({
+    name,
+    ...apply(func, arg),
+});
 
 export type { Abstraction, Application, IncompleteAbstraction, IncompleteApplication, IncompleteTerm, Term, Value };
 export { apply, createValue, lambda, MISSING, namedApply, namedLambda, TermType };
