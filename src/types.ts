@@ -70,5 +70,5 @@ const isCompleteTerm = (term: IncompleteTerm): term is Term => {
     }
 };
 
-export type { Application, IncompleteAbstraction, IncompleteApplication, IncompleteTerm, Term, Value };
+export type { Abstraction, Application, IncompleteAbstraction, IncompleteApplication, IncompleteTerm, Term, Value };
 export { apply, createValue, isCompleteTerm, lambda, MISSING, namedApply, namedLambda, TermType };

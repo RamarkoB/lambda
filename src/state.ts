@@ -1,5 +1,5 @@
 import { encode, EncodedTerm } from './encode.ts';
-import reduceWithStrategy, { EvalStrategy } from './eval.ts';
+import betaReduce, { EvalStrategy } from './eval.ts';
 import { RenderConfig } from './render.ts';
 import { type IncompleteTerm, isCompleteTerm, MISSING, TermType } from './types.ts';
 
@@ -43,7 +43,7 @@ const reduce = (state: AppState): AppState => {
         const currTerm = state.termReductions[state.reductionIndex];
         if (!isCompleteTerm(currTerm)) return { ...state, status: AppStatus.Error };
 
-        const newTerm = reduceWithStrategy(currTerm, state.evalStrategy);
+        const newTerm = betaReduce(currTerm, state.evalStrategy);
 
         return currTerm === newTerm
             ? { ...state, status: AppStatus.Normalized }
