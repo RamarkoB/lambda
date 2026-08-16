@@ -1,7 +1,7 @@
 import { addHoverEffect, addMissingEffect } from './handlers.ts';
 import { type EncodedTerm, encodeTerm } from './utils.ts';
 import { type AppState, AppStatus, BUTTONS, type StateUpdateFunction } from './state.ts';
-import { type Application, type IncompleteApplication, type IncompleteTerm, MISSING, TermType } from './types.ts';
+import { type Application, type IncompleteApplication, type IncompleteTerm, TermType } from './types.ts';
 
 type Alignment = 'left' | 'middle' | 'right';
 
@@ -244,23 +244,29 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     // Clear previous content
     view.replaceChildren();
 
-    if (state.status === AppStatus.Edit && state.editHistory.length === 1 && state.editHistory[0] === MISSING) {
-        console.log('Show Empty View!');
+    if (state.status !== AppStatus.Edit || state.editHistory.length > 1) {
+        document.getElementById('empty')?.classList.remove('hide');
+    }
+
+    if (state.status === AppStatus.Error) {
+        document.getElementById('errorView')?.classList.remove('hide');
+    } else {
+        document.getElementById('errorView')?.classList.add('hide');
     }
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 
-    const isEditing = state.status === AppStatus.Edit;
-    const currTerm = isEditing ? state.editHistory[state.editIndex] : state.termEvals[state.evalIndex];
+    const isReduceView = state.status === AppStatus.Reduced;
+    const currTerm = isReduceView ? state.termEvals[state.evalIndex] : state.editHistory[state.editIndex];
     const encodedTerm = encodeTerm(currTerm);
     renderTermGroup(svg, encodedTerm, state.config);
 
     view.appendChild(svg);
     termElement.innerHTML = formatTerm(encodedTerm, state.config.showNames);
-    indexElement.innerText = isEditing ? '1 / ??' : `${state.evalIndex + 1} / ${state.termEvals.length}`;
+    indexElement.innerText = isReduceView ? `${state.evalIndex + 1} / ${state.termEvals.length}` : '1 / ??';
 
     // disable or enable the menu buttons, depending on app status
-    disableButton('menu', isEditing);
+    disableButton('menu', !isReduceView);
     BUTTONS.forEach(({ id, isDisabled }) => disableButton(id, isDisabled(state)));
 
     // Add hover and drag listeners to all relevant elements

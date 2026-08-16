@@ -96,6 +96,7 @@ body {
 
 #mainExpandMenu {
     position: absolute;
+    z-index: 2;
     top: 1rem;
     right: 1rem;
 
@@ -143,6 +144,88 @@ div > #resizeCheckbox:checked {
 #lambdaView > svg {
     height: 100%;
     width: 100%;
+}
+
+#errorView, #emptyView {
+    position: absolute;
+    z-index: 1;
+    top: 4px;
+    left: 4px;
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    border-radius: 15px;
+}
+
+#errorView.hide, #emptyView.hide {
+    display: none;
+}
+
+#errorView {
+    background-color: rgb(255 255 255 / 0.80);
+}
+
+#errorView > p {
+    width: 100%;
+    margin: 0;
+    text-align: center;
+    font-size: larger;
+
+    position: absolute;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 50%;
+}
+
+#emptyView {
+    pointer-events: none;
+}
+
+.line {
+    stroke: var(--color);
+    stroke-width: 5;
+    stroke-linecap: round;
+}
+
+.label {
+    fill: var(--color);
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+}
+
+.value {
+    --color: blue;
+}
+
+.abstraction {
+    --color: green;
+}
+
+.application {
+    --color: red;
+}
+
+.missing {
+    --color: black;
+}
+
+/* Default state - everything visible */
+.group .label,
+.group .line,
+.text {
+    transition: opacity 0.2s ease;
+    opacity: 1;
+}
+
+/* When any node is hovered/selected, reduce opacity of all nodes */
+.group:has(.hover.selected) .label,
+.group:has(.hover.selected) .line {
+    opacity: 0.25;
+}
+
+/* Keep the hovered/selected node and its children at full opacity */
+.group:has(> .hover.selected) .label,
+.group:has(> .hover.selected) .line {
+    opacity: 1;
 }
 
 #sidebar {
@@ -207,54 +290,6 @@ div > #resizeCheckbox:checked {
     margin-bottom: 0.5rem;
 }
 
-.line {
-    stroke: var(--color);
-    stroke-width: 5;
-    stroke-linecap: round;
-}
-
-.label {
-    fill: var(--color);
-    font-family: 'Jost', sans-serif;
-    font-size: 10px;
-}
-
-.value {
-    --color: blue;
-}
-
-.abstraction {
-    --color: green;
-}
-
-.application {
-    --color: red;
-}
-
-.missing {
-    --color: black;
-}
-
-/* Default state - everything visible */
-.group .label,
-.group .line,
-.text {
-    transition: opacity 0.2s ease;
-    opacity: 1;
-}
-
-/* When any node is hovered/selected, reduce opacity of all nodes */
-.group:has(.hover.selected) .label,
-.group:has(.hover.selected) .line {
-    opacity: 0.25;
-}
-
-/* Keep the hovered/selected node and its children at full opacity */
-.group:has(> .hover.selected) .label,
-.group:has(> .hover.selected) .line {
-    opacity: 1;
-}
-
 #lambdaTerm {
     margin-top: 0;
     text-align: center;
@@ -286,6 +321,7 @@ div > #resizeCheckbox:checked {
 .disabled > button, button.disabled {
     opacity: 50%;
     cursor: not-allowed;
+    pointer-events: none;
 }
 
 #acknowledgements {

@@ -14,7 +14,7 @@ Languages Class. The lambda calculator currently supports four reduction strateg
 
 ## Code
 
-The Codebase is written entirely in TypeScript and Compiled to minified JS and static HTML with Deno. The Core Code consists of 9 files:
+The codebase is written entirely in TypeScript and Compiled to minified JS and static HTML with Deno. It consists of 9 files:
 
 - `evaluate`: Core Business Logic for evaluation, α-conversion, and β-reduction for different strategies
 - `handlers`: Event Handlers to the page document and to different HTML elements (buttons, toggles, etc.)
