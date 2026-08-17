@@ -187,8 +187,8 @@ div > #resizeCheckbox:checked {
 #emptyView p {
     position: absolute;
     top: 57.5%;
-    right: 2.5%;
-    width: 39.5%;
+    right: 3.5%;
+    width: 38.5%;
     height: fit-content;
     text-align: center;
     margin: 0%;
