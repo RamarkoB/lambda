@@ -46,14 +46,26 @@
 
                 <p id="equivalentTerms"></p>
 
+                <div id="emptyView">
+                    <svg width="155" height="13" viewBox="0 0 155 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M9.32202 11.5001L2.53015 6.50009L9.32202 1.50009M2.53015 6.50009C52.5302 6.50009 102.53 6.50009 152.53 6.50009"
+                            stroke="black"
+                            stroke-width="3"
+                            stroke-linecap="round"
+                        />
+                    </svg>
+                    <p>Drag terms into the missing element to complete the term!</p>
+                </div>
+
                 <div id="errorView" class="hide">
                     <p>
                         This term has hit the max reduction depth.<br>
                         Either change the term or the reduction strategy
                     </p>
                 </div>
-                <div id="emptyView"></div>
             </div>
+
             <div id="sidebar">
                 <div id="varNameWrapper">
                     <label for="varName">Variable Name:</label>

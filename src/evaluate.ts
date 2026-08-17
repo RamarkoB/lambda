@@ -145,8 +145,10 @@ const betaReduce = (term: Term, strategy: EvalStrategy): Term => {
     }
 };
 
-const evaluate = (term: Term, strategy: EvalStrategy): Term[] =>
-    canReduce(term, strategy) ? [term, ...evaluate(betaReduce(term, strategy), strategy)] : [term];
+const evaluate = (term: Term, strategy: EvalStrategy, layers = 1000): Term[] => {
+    if (layers <= 0) throw new Error('Too Many Layers!');
+    return canReduce(term, strategy) ? [term, ...evaluate(betaReduce(term, strategy), strategy, layers - 1)] : [term];
+};
 
 export { alphaConvert, betaReduce, canReduce, getFreeVariables, isRedux };
 export default evaluate;

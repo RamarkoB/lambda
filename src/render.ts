@@ -260,7 +260,7 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     view.replaceChildren();
 
     if (state.status !== AppStatus.Edit || state.editHistory.length > 1) {
-        document.getElementById('empty')?.classList.remove('hide');
+        document.getElementById('emptyView')?.classList.add('hide');
     }
 
     if (state.status === AppStatus.Error) {

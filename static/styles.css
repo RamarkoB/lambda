@@ -172,6 +172,28 @@ div > #resizeCheckbox:checked {
     display: none;
 }
 
+#emptyView {
+    pointer-events: none;
+}
+
+#emptyView svg {
+    position: absolute;
+    top: 52.5%;
+    right: 2.5%;
+    width: 42.5%;
+    height: fit-content;
+}
+
+#emptyView p {
+    position: absolute;
+    top: 57.5%;
+    right: 2.5%;
+    width: 39.5%;
+    height: fit-content;
+    text-align: center;
+    margin: 0%;
+}
+
 #errorView {
     background-color: rgb(255 255 255 / 0.80);
 }
@@ -186,10 +208,6 @@ div > #resizeCheckbox:checked {
     transform: translate(-50%, -50%);
     left: 50%;
     top: 50%;
-}
-
-#emptyView {
-    pointer-events: none;
 }
 
 .line {
