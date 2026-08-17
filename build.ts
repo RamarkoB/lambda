@@ -9,13 +9,12 @@ await esbuild.build({
     sourcemap: true,
     target: 'es2022',
     platform: 'browser',
-    loader: {
-        '.ts': 'ts',
-    },
+    loader: { '.ts': 'ts' },
 });
 
 // Copy index.html to dist directory
 await copyFile('./static/index.html', './dist/index.html');
 await copyFile('./static/styles.css', './dist/styles.css');
+await copyFile('./static/Logo.png', './dist/Logo.png');
 
 esbuild.stop();
