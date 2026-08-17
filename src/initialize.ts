@@ -1,4 +1,4 @@
-import { encodeTerm } from './utils.ts';
+import { deBruijn, encodeTerm } from './utils.ts';
 import { addHandleEvalStrategyUpdate, addHandleKeydown, addOnClick } from './handlers.ts';
 import { renderTermGroup } from './render.ts';
 import { BUTTONS, KEYS, onEvalStrategyToggle, type StateUpdateFunction } from './state.ts';
@@ -6,9 +6,9 @@ import terms, { type SidebarNode } from './terms.ts';
 import { apply, createValue, lambda, MISSING } from './types.ts';
 
 const basicTerms: SidebarNode[] = [
-    ['value', (val) => createValue(val)],
-    ['abstraction', (val) => lambda(val, MISSING)],
-    ['apply', () => apply(MISSING, MISSING)],
+    ['value', (val) => createValue(val), deBruijn(createValue('a'))],
+    ['abstraction', (val) => lambda(val, MISSING), deBruijn(lambda('a', MISSING))],
+    ['apply', () => apply(MISSING, MISSING), deBruijn(apply(MISSING, MISSING))],
 ];
 
 // create sidebar node from [termName, termFn] pair
@@ -44,7 +44,7 @@ const initialize = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) 
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
-    // constructor
+    // seperator constructor
     const seperator = document.createElement('div');
     seperator.id = 'seperator';
 

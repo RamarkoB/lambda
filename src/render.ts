@@ -2,6 +2,7 @@ import { addHoverEffect, addMissingEffect } from './handlers.ts';
 import { type EncodedTerm, encodeTerm } from './utils.ts';
 import { type AppState, AppStatus, BUTTONS, type StateUpdateFunction } from './state.ts';
 import { type Application, type IncompleteApplication, type IncompleteTerm, TermType } from './types.ts';
+import { getEquivalentTerms } from './terms.ts';
 
 type Alignment = 'left' | 'middle' | 'right';
 
@@ -232,6 +233,20 @@ const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, 
     parent.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
 };
 
+const renderEquivalentTerm = (termName?: string) => `<span class="equivalentTerms" >${termName}</span>`;
+
+const renderEquivalentTerms = (term: IncompleteTerm) => {
+    const equivalentTermsElement = document.getElementById('equivalentTerms');
+    if (!equivalentTermsElement) return;
+
+    const equivalentTerms = getEquivalentTerms(term).map(renderEquivalentTerm);
+    const innerHTML =
+        equivalentTerms.length === 0 ? ''
+        : equivalentTerms.length === 1 ? `This term is equivalent to ${equivalentTerms[0]}`
+        : `This term is equivalent to ${equivalentTerms.slice(0, -1).join(', ')} and ${equivalentTerms.at(-1)}`;
+    equivalentTermsElement.innerHTML = innerHTML;
+};
+
 const disableButton = (id: string, disabled: boolean) => document.getElementById(id)?.classList.toggle('disabled', disabled);
 
 // main function to render a term inside of the `lambdaView` element
@@ -260,6 +275,7 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     const currTerm = isReduceView ? state.termEvals[state.evalIndex] : state.editHistory[state.editIndex];
     const encodedTerm = encodeTerm(currTerm);
     renderTermGroup(svg, encodedTerm, state.config);
+    renderEquivalentTerms(currTerm);
 
     view.appendChild(svg);
     termElement.innerHTML = formatTerm(encodedTerm, state.config.showNames);

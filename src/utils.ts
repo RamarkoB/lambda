@@ -69,4 +69,17 @@ const isTermComplete = (term: IncompleteTerm): term is Term => {
     }
 };
 
-export { encodeTerm, insertTerm, isTermComplete };
+// use the De Bruijn index to construct a representation that is invariant across α-equivalent terms
+const deBruijn = (term: IncompleteTerm, bound: Record<string, number> = {}, level = 0): string => {
+    switch (term.type) {
+        case TermType.Missing:
+            return 'Missing';
+        case TermType.Value:
+            return bound[term.val] === undefined ? `free:${term.val}` : `#${level - bound[term.val]}`;
+        case TermType.Abstraction:
+            return `(λ ${deBruijn(term.body, { ...bound, [term.param.val]: level + 1 }, level + 1)})`;
+        case TermType.Application:
+            return `(${deBruijn(term.func, bound, level)} ${deBruijn(term.arg, bound, level)})`;
+    }
+};
+export { deBruijn, encodeTerm, insertTerm, isTermComplete };

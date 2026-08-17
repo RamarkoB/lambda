@@ -1,3 +1,4 @@
+import { deBruijn } from './utils.ts';
 import {
     apply,
     createValue,
@@ -8,15 +9,16 @@ import {
     MISSING,
     namedApply,
     namedLambda,
+    TermType,
 } from './types.ts';
 
-type SidebarNode = [string, (varName: string) => IncompleteTerm];
+type SidebarNode = [string, (varName: string) => IncompleteTerm, string];
 
 // combinators
 const lambdaI = namedLambda('I Combinator', 'x', 'x'); // I combinator (identity function)
-const lambdaU = namedLambda('U Combinator', 'x', apply('x', 'x'));
 const lambdaK = namedLambda('K Combinator', 'x', lambda('y', 'x')); // K combinator (constant function)
 const lambdaS = namedLambda('S Combinator', 'x', lambda('y', lambda('z', apply(apply('x', 'z'), apply('y', 'z'))))); // S combinator (substitution)
+const lambdaU = namedLambda('U Combinator', 'x', apply('x', 'x'));
 const lambdaB = namedLambda('B Combinator', 'f', lambda('g', lambda('x', apply('f', apply('g', 'x'))))); // B combinator (composition)
 const lambdaC = namedLambda('C Combinator', 'f', lambda('x', lambda('y', apply(apply('f', 'y'), 'x')))); // C combinator (flip arguments)
 const lambdaW = namedLambda('W Combinator', 'f', lambda('x', apply(apply('f', 'x'), 'x'))); // W combinator (duplication)
@@ -83,9 +85,9 @@ const tail = namedLambda(
 const makeSidebarTerm = (
     term: (IncompleteApplication | IncompleteAbstraction) & { name: string },
     layers = 0,
-): [string, () => IncompleteTerm] => {
+): SidebarNode => {
     const lambdaTerm = Array.from({ length: layers }, (_, index) => index).reduce<IncompleteTerm>((acc, _) => apply(acc, MISSING), term);
-    return [term.name, () => lambdaTerm];
+    return [term.name, () => lambdaTerm, deBruijn(term)];
 };
 
 const terms: SidebarNode[] = [
@@ -139,5 +141,14 @@ const terms: SidebarNode[] = [
     makeSidebarTerm(omega),
 ];
 
+const getEquivalentTerms = (term: IncompleteTerm) => {
+    const termName = term.type !== TermType.Value && term.type !== TermType.Missing ? term.name : undefined;
+    const indexedTerm = deBruijn(term);
+    return terms
+        .filter(([name, , indexedListTerm]) => termName !== name && indexedListTerm === indexedTerm)
+        .map(([name]) => name);
+};
+
 export type { SidebarNode };
+export { getEquivalentTerms };
 export default terms;

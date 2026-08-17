@@ -146,6 +146,18 @@ div > #resizeCheckbox:checked {
     width: 100%;
 }
 
+#equivalentTerms {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    text-align: center;
+    width: 100%;
+}
+
+.equivalentTerms {
+    color: blue;
+}
+
 #errorView, #emptyView {
     position: absolute;
     z-index: 1;
