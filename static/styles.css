@@ -238,11 +238,15 @@ div > #resizeCheckbox:checked {
     --color: black;
 }
 
+.missing.dragover, .dragover .missing {
+    --color: #777777;
+}
+
 /* Default state - everything visible */
 .group .label,
 .group .line,
 .text {
-    transition: opacity 0.2s ease;
+    transition: opacity 0.3s ease;
     opacity: 1;
 }
 

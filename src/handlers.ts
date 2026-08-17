@@ -28,6 +28,14 @@ const addMissingEffect = (setState: (stateUpdateFn: StateUpdateFunction) => void
     if (!encoding) return;
 
     element.addEventListener('dragover', (event) => event.preventDefault());
+    element.addEventListener('dragenter', (event) => {
+        event.preventDefault();
+        element.classList.add('dragover');
+    });
+    element.addEventListener('dragleave', (event) => {
+        event.preventDefault();
+        element.classList.remove('dragover');
+    });
     element.addEventListener('drop', (event) => {
         event.preventDefault();
         const data = event.dataTransfer?.getData('text');

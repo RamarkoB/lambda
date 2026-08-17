@@ -240,11 +240,15 @@ const renderEquivalentTerms = (term: IncompleteTerm) => {
     if (!equivalentTermsElement) return;
 
     const equivalentTerms = getEquivalentTerms(term).map(renderEquivalentTerm);
-    const innerHTML =
-        equivalentTerms.length === 0 ? ''
-        : equivalentTerms.length === 1 ? `This term is equivalent to ${equivalentTerms[0]}`
-        : `This term is equivalent to ${equivalentTerms.slice(0, -1).join(', ')} and ${equivalentTerms.at(-1)}`;
-    equivalentTermsElement.innerHTML = innerHTML;
+    if (equivalentTerms.length === 0) {
+        equivalentTermsElement.innerHTML = '';
+        return;
+    }
+
+    const innerHTMLSuffix = equivalentTerms.length === 1
+        ? equivalentTerms[0]
+        : equivalentTerms.slice(0, -1).join(', ').concat(`and ${equivalentTerms.at(-1)}`);
+    equivalentTermsElement.innerHTML = `This term is equivalent to ${innerHTMLSuffix}`;
 };
 
 const disableButton = (id: string, disabled: boolean) => document.getElementById(id)?.classList.toggle('disabled', disabled);
