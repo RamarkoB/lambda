@@ -245,9 +245,9 @@ const renderEquivalentTerms = (term: IncompleteTerm) => {
         return;
     }
 
-    const innerHTMLSuffix = equivalentTerms.length === 1
-        ? equivalentTerms[0]
-        : equivalentTerms.slice(0, -1).join(', ').concat(`and ${equivalentTerms.at(-1)}`);
+    const innerHTMLSuffix = equivalentTerms.length === 1 ? equivalentTerms[0]
+        : equivalentTerms.slice(0, -1).join(', ').concat(` and ${equivalentTerms.at(-1)}`);
+    
     equivalentTermsElement.innerHTML = `This term is equivalent to ${innerHTMLSuffix}`;
 };
 
