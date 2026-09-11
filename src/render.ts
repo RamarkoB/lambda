@@ -72,37 +72,27 @@ const getNumTermLayers = (term: IncompleteTerm): number => {
 const getViewBoxSize = (termEnd: number, termDepth: number) =>
     `0 0 ${(termEnd - 1) * HOR_GAP + 2 * HOR_OFFSET} ${termDepth * VER_GAP + 2 * VER_OFFSET}`;
 
-// renders a single horizontal line for a term between x1 and x2 at height y
-const renderHorLine = (type: TermType, encoding: string, x1: number, x2: number, y: number) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+const renderSVGElement = <K extends keyof SVGElementTagNameMap>(name: K) => document.createElementNS('http://www.w3.org/2000/svg', name);
+
+const renderLine = (type: TermType, encoding: string, x1: number, x2: number, y1: number, y2: number) => {
+    const line = renderSVGElement('line');
     line.setAttribute('x1', (x1 * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('x2', (x2 * HOR_GAP + HOR_OFFSET).toString());
-    line.setAttribute('y1', (y * VER_GAP + VER_OFFSET).toString());
-    line.setAttribute('y2', (y * VER_GAP + VER_OFFSET).toString());
-    line.setAttribute('class', `${type} hover line code-${encoding}`);
-    line.setAttribute('data-layer', `${y}`);
-    line.setAttribute('data-horizontalStart', `${x1}`);
-    line.setAttribute('data-horizontalEnd', `${x2}`);
-    return line;
-};
-
-// renders a single vertical line for a term between y1 and y2 at offset x
-const renderVerLine = (type: TermType, encoding: string, x: number, y1: number, y2: number) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', (x * HOR_GAP + HOR_OFFSET).toString());
-    line.setAttribute('x2', (x * HOR_GAP + HOR_OFFSET).toString());
     line.setAttribute('y1', (y1 * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('y2', (y2 * VER_GAP + VER_OFFSET).toString());
     line.setAttribute('class', `${type} hover line code-${encoding}`);
-    line.setAttribute('data-horizontalOffset', `${x}`);
-    line.setAttribute('data-topLayer', `${y2}`);
-    line.setAttribute('data-bottomLayer', `${y1}`);
     return line;
 };
 
+// renders a single horizontal line for a term between x1 and x2 at height y
+const renderHorLine = (type: TermType, encoding: string, x1: number, x2: number, y: number) => renderLine(type, encoding, x1, x2, y, y);
+
+// renders a single vertical line for a term between y1 and y2 at offset x
+const renderVerLine = (type: TermType, encoding: string, x: number, y1: number, y2: number) => renderLine(type, encoding, x, x, y1, y2);
+
 // renders a label for a term at a specific point and alignment
 const renderLabel = (type: TermType, val: string, encoding: string, x: number, y: number, align: Alignment = 'middle') => {
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const text = renderSVGElement('text');
     text.setAttribute('x', (x * HOR_GAP + HOR_OFFSET).toString());
     text.setAttribute('y', (y * VER_GAP + VER_OFFSET).toString());
     text.setAttribute('class', `${type} label code-${encoding} ${val}`);
@@ -113,7 +103,7 @@ const renderLabel = (type: TermType, val: string, encoding: string, x: number, y
 
 // creates an SVG group to serve as a wrapper around a term
 const renderGroup = (parent: SVGElement, className: string): SVGGElement => {
-    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const group = renderSVGElement('g');
     group.setAttribute('class', className);
     parent.append(group);
     return group;
@@ -148,7 +138,6 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
         case TermType.Value: {
             const valueStop = values[term.val] ?? 1;
-
             group.append(renderVerLine(term.type, term.encoding, termStart, verBottomLayer, valueStop));
             if (config.labels) group.append(renderLabel(term.type, term.val, term.encoding, termStart, 0));
 
@@ -157,7 +146,6 @@ const renderTerm: RenderTermFunction = (group, term, horLayers, verTopLayer, ver
 
         case TermType.Abstraction: {
             const name = term.param.val;
-
             const newVerTopLayer = verTopLayer + 1;
             const verLineLayer = verTopLayer + 2;
             const newValues = { ...values, [name]: verLineLayer };
@@ -227,7 +215,6 @@ const renderChildTerm: RenderTermFunction = (group, term, ...renderArgs) =>
 // render a term and attach it so an svg element
 const renderTermGroup = (parent: SVGElement, term: EncodedTerm<IncompleteTerm>, config: RenderConfig) => {
     const group = renderGroup(parent, 'group');
-
     const termDepth = getNumTermLayers(term) + ABSTRACT_GAP;
     const [termEnd] = renderTerm(group, term, [0, 0], 0, termDepth, config, {});
     parent.setAttribute('viewBox', getViewBoxSize(termEnd, termDepth));
@@ -247,7 +234,6 @@ const renderEquivalentTerms = (term: IncompleteTerm) => {
 
     const innerHTMLSuffix = equivalentTerms.length === 1 ? equivalentTerms[0]
         : equivalentTerms.slice(0, -1).join(', ').concat(` and ${equivalentTerms.at(-1)}`);
-    
     equivalentTermsElement.innerHTML = `This term is equivalent to ${innerHTMLSuffix}`;
 };
 
@@ -258,30 +244,24 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     const view = document.getElementById('lambdaView');
     const termElement = document.getElementById('lambdaTerm');
     const indexElement = document.getElementById('index');
-    if (!view || !termElement || !indexElement) return;
+    const emptyView = document.getElementById('emptyView');
+    const errorView = document.getElementById('errorView');
+    if (!view || !termElement || !indexElement || !emptyView || !errorView) return;
 
-    // Clear previous content
-    view.replaceChildren();
+    // replace previous content 
+    const svg = renderSVGElement('svg');
+    view.replaceChildren(svg);
 
-    if (state.status !== AppStatus.Edit || state.editHistory.length > 1) {
-        document.getElementById('emptyView')?.classList.add('hide');
-    }
-
-    if (state.status === AppStatus.Error) {
-        document.getElementById('errorView')?.classList.remove('hide');
-    } else {
-        document.getElementById('errorView')?.classList.add('hide');
-    }
-
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-
+    // render new term and text
     const isReduceView = state.status === AppStatus.Reduced;
     const currTerm = isReduceView ? state.termEvals[state.evalIndex] : state.editHistory[state.editIndex];
     const encodedTerm = encodeTerm(currTerm);
     renderTermGroup(svg, encodedTerm, state.config);
     renderEquivalentTerms(currTerm);
 
-    view.appendChild(svg);
+    // update view classes and text values
+    emptyView.className = state.status !== AppStatus.Edit || state.editHistory.length > 1 ? 'hide' : '';
+    errorView.className = state.status !== AppStatus.Error ? 'hide' : '';
     termElement.innerHTML = formatTerm(encodedTerm, state.config.showNames);
     indexElement.innerText = isReduceView ? `${state.evalIndex + 1} / ${state.termEvals.length}` : '1 / ??';
 
@@ -296,5 +276,5 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
 };
 
 export type { RenderConfig };
-export { renderTermGroup };
+export { renderSVGElement, renderTermGroup };
 export default renderState;

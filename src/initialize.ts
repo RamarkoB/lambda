@@ -1,6 +1,6 @@
 import { deBruijn, encodeTerm } from './utils.ts';
 import { addHandleEvalStrategyUpdate, addHandleKeydown, addOnClick } from './handlers.ts';
-import { renderTermGroup } from './render.ts';
+import { renderSVGElement, renderTermGroup } from './render.ts';
 import { BUTTONS, KEYS, onEvalStrategyToggle, type StateUpdateFunction } from './state.ts';
 import terms, { type SidebarNode } from './terms.ts';
 import { apply, createValue, lambda, MISSING } from './types.ts';
@@ -15,7 +15,7 @@ const basicTerms: SidebarNode[] = [
 const createSidebarNode = ([termName, termFn]: SidebarNode) => {
     const varNameInput = document.getElementsByTagName('input').namedItem('varName');
     const node = document.createElement('div');
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const svg = renderSVGElement('svg');
 
     const encodedTerm = encodeTerm(termFn(' '));
     renderTermGroup(svg, encodedTerm, { labels: false, showNames: false });
@@ -44,11 +44,9 @@ const initialize = (handleUpdate: (stateUpdateFn: StateUpdateFunction) => void) 
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
-    // seperator constructor
+    // construct seperator and append all terms to sidebar
     const seperator = document.createElement('div');
     seperator.id = 'seperator';
-
-    // append all terms to sidebar
     sidebar.append(...basicTerms.map(createSidebarNode), seperator, ...terms.map(createSidebarNode));
 
     // initial main view render
