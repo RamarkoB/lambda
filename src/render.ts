@@ -248,7 +248,7 @@ const renderState = (state: AppState, setState: (stateUpdateFn: StateUpdateFunct
     const errorView = document.getElementById('errorView');
     if (!view || !termElement || !indexElement || !emptyView || !errorView) return;
 
-    // replace previous content 
+    // replace previous content
     const svg = renderSVGElement('svg');
     view.replaceChildren(svg);
 
